@@ -95,9 +95,8 @@ export default async function WordPage({
                 href={`/sightings/${sighting.sightingId}`}
                 className="mt-1 inline-block text-xs font-medium text-blue-600 hover:underline"
               >
-                {sighting.hasOwnDefinition
-                  ? "Ver/editar significado nesta fonte"
-                  : "Adicionar significado/exemplos nesta fonte"}
+                Editar significado nesta fonte
+                {sighting.hasOwnDefinition ? " (personalizado)" : ""}
               </Link>
             </li>
           ))}

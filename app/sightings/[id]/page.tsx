@@ -41,11 +41,8 @@ export default async function SightingPage({
         </p>
         <h1 className="text-2xl font-bold">Significado nesta fonte</h1>
         <p className="mt-1 text-sm text-slate-500">
-          {word
-            ? `Definição geral: ${word.definitionPt}`
-            : ""}{" "}
-          — aqui você registra o significado e os exemplos específicos desta
-          fonte.
+          Os campos começam com a definição existente — edite-a para o sentido e
+          os exemplos desta fonte. A definição geral da palavra não é alterada.
         </p>
       </div>
 
@@ -54,9 +51,12 @@ export default async function SightingPage({
           sightingId={sighting.id}
           defaultValues={{
             contextSentence: sighting.contextSentence ?? "",
-            definitionEn: sighting.definitionEn ?? "",
-            definitionPt: sighting.definitionPt ?? "",
-            examples: sighting.examples.join("\n"),
+            definitionEn: sighting.definitionEn ?? word?.definitionEn ?? "",
+            definitionPt: sighting.definitionPt ?? word?.definitionPt ?? "",
+            examples: (sighting.examples.length > 0
+              ? sighting.examples
+              : (word?.examples ?? [])
+            ).join("\n"),
           }}
         />
       </div>

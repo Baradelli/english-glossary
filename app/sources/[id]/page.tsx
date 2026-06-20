@@ -36,7 +36,7 @@ function WordList({ words }: { words: SourceWordView[] }): ReactNode {
             href={`/sightings/${entry.sightingId}`}
             className="mt-1 inline-block text-xs font-medium text-blue-600 hover:underline"
           >
-            Significado/exemplos nesta fonte
+            Editar significado nesta fonte
           </Link>
         </li>
       ))}
