@@ -69,6 +69,21 @@ describe("PrismaExamRepository — create", () => {
     expect(exam.createdAt.toISOString()).toBe(createdAt.toISOString());
   });
 
+  it("listAll returns every exam, newest first", async () => {
+    const a = await repo.create({
+      type: "semanal",
+      promptText: "a",
+      createdAt: new Date("2026-06-19T00:00:00.000Z"),
+    });
+    const b = await repo.create({
+      type: "vocabulario",
+      promptText: "b",
+      createdAt: new Date("2026-06-20T00:00:00.000Z"),
+    });
+    const ids = (await repo.listAll()).map((e) => e.id);
+    expect(ids).toEqual([b.id, a.id]);
+  });
+
   it("saveAnswers stores answers + correction prompt and moves to respondida", async () => {
     const exam = await repo.create({ type: "vocabulario", promptText: "p" });
     const updated = await repo.saveAnswers(exam.id, {

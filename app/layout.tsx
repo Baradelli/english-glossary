@@ -28,6 +28,9 @@ export default function RootLayout({
             <Link href="/sources" className="text-sm text-slate-600 hover:text-slate-900">
               Fontes
             </Link>
+            <Link href="/exams" className="text-sm text-slate-600 hover:text-slate-900">
+              Provas
+            </Link>
           </nav>
         </header>
         <main className="mx-auto max-w-4xl px-6 py-10">{children}</main>

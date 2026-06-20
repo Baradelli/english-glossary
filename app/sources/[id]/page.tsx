@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getSourceDetail } from "../../../src/application/index.js";
 import { sourceViewDeps } from "../../../src/server/container.js";
 import { CaptureWordForm } from "../../../src/ui/CaptureWordForm.js";
+import { GenerateComprehensionForm } from "../../../src/ui/ExamForms.js";
 import { cardClass } from "../../../src/ui/controls.js";
 import type { SourceWordView } from "../../../src/application/index.js";
 
@@ -98,16 +99,12 @@ export default async function SourcePage({
       <section className={cardClass}>
         <h2 className="font-semibold">Prova de compreensão</h2>
         <p className="mt-1 text-sm text-slate-500">
-          Gerar a prova de compreensão desta fonte (Template 3) entra no Fluxo C
-          — próximo passo do roadmap.
+          Gere a prova de compreensão desta fonte (Template 3). Cole uma
+          transcrição/resumo para ancorar as perguntas no conteúdo real.
         </p>
-        <button
-          type="button"
-          disabled
-          className="mt-3 cursor-not-allowed rounded-md bg-slate-200 px-4 py-2 text-sm font-medium text-slate-500"
-        >
-          Gerar prova (em breve)
-        </button>
+        <div className="mt-4">
+          <GenerateComprehensionForm sourceId={source.id} />
+        </div>
       </section>
 
       <Link href="/sources" className="text-sm text-blue-600 hover:underline">

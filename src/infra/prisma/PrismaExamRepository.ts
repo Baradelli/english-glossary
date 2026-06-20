@@ -28,6 +28,13 @@ export class PrismaExamRepository implements ExamRepository {
     return row ? toExam(row) : null;
   }
 
+  async listAll(): Promise<Exam[]> {
+    const rows = await this.prisma.exam.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    return rows.map(toExam);
+  }
+
   async saveAnswers(
     examId: string,
     data: { answersText: string; correctionPrompt: string },

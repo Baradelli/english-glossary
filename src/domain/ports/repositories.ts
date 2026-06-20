@@ -148,6 +148,8 @@ export interface ExamCorrection {
 export interface ExamRepository {
   create(data: NewExam): Promise<Exam>;
   findById(id: string): Promise<Exam | null>;
+  /** Every exam, newest first, for the exams list. */
+  listAll(): Promise<Exam[]>;
   /**
    * Stores the pasted exam-and-answers plus the generated correction prompt and
    * moves the exam to `respondida` (the second turn of the two-turn flow).

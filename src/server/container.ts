@@ -26,3 +26,15 @@ export const captureDeps = {
   words: repos.words,
   sightings: repos.sightings,
 };
+
+export const examGenDeps = {
+  words: repos.words,
+  exams: repos.exams,
+};
+
+export const examComprehensionDeps = {
+  sources: repos.sources,
+  sightings: repos.sightings,
+  words: repos.words,
+  exams: repos.exams,
+};

@@ -13,8 +13,18 @@ import {
   captureInSource,
   ensureSource,
   ensureSourceType,
+  generateSourceComprehensionExam,
+  generateVocabularyExam,
+  generateWeeklyReviewExam,
+  submitExamAnswers,
+  submitExamCorrection,
 } from "../application/index.js";
-import { captureDeps, repos } from "./container.js";
+import {
+  captureDeps,
+  examComprehensionDeps,
+  examGenDeps,
+  repos,
+} from "./container.js";
 
 export interface FormState {
   readonly error?: string;
@@ -109,4 +119,99 @@ export async function captureWordAction(
   } catch (error) {
     return { error: errorMessage(error) };
   }
+}
+
+// ── Fluxo C: exam cycle ────────────────────────────────────────────────────
+
+export async function generateWeeklyExamAction(
+  _prev: FormState,
+  _formData: FormData,
+): Promise<FormState> {
+  let id: string;
+  try {
+    id = (await generateWeeklyReviewExam(examGenDeps, new Date())).id;
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
+  redirect(`/exams/${id}`);
+}
+
+export async function generateVocabularyExamAction(
+  _prev: FormState,
+  _formData: FormData,
+): Promise<FormState> {
+  let id: string;
+  try {
+    const words = await repos.words.listAll();
+    const exam = await generateVocabularyExam(
+      examGenDeps,
+      words.map((w) => w.id),
+      new Date(),
+    );
+    id = exam.id;
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
+  redirect(`/exams/${id}`);
+}
+
+export async function generateComprehensionExamAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const sourceId = field(formData, "sourceId");
+  const transcript = field(formData, "transcript");
+  if (!sourceId) return { error: "Fonte ausente." };
+  let id: string;
+  try {
+    const exam = await generateSourceComprehensionExam(
+      examComprehensionDeps,
+      sourceId,
+      transcript || undefined,
+      new Date(),
+    );
+    id = exam.id;
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
+  redirect(`/exams/${id}`);
+}
+
+export async function submitAnswersAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const examId = field(formData, "examId");
+  const answersText = field(formData, "answersText");
+  if (!answersText) return { error: "Cole a prova com suas respostas." };
+  try {
+    await submitExamAnswers(repos.exams, examId, answersText);
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
+  revalidatePath(`/exams/${examId}`);
+  return { ok: true, message: "Prompt de correção gerado." };
+}
+
+export async function submitCorrectionAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const examId = field(formData, "examId");
+  const resultText = field(formData, "resultText");
+  if (!resultText) return { error: "Cole o JSON de correção." };
+
+  const result = await submitExamCorrection(
+    { words: repos.words, exams: repos.exams },
+    examId,
+    resultText,
+    new Date(),
+  );
+  if (!result.ok) return { error: result.error };
+
+  revalidatePath(`/exams/${examId}`);
+  const ignored = result.unmatchedTerms.length
+    ? ` Termos ignorados (sem correspondência): ${result.unmatchedTerms.join(", ")}.`
+    : "";
+  return { ok: true, message: `Correção aplicada e SRS atualizado.${ignored}` };
 }
