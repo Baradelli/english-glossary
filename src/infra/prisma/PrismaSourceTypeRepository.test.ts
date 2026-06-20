@@ -32,7 +32,13 @@ describe("PrismaSourceTypeRepository", () => {
     expect(names).toEqual(["Filme", "Vídeo"]);
   });
 
+  it("finds a type by id", async () => {
+    const created = await repo.create("Filme");
+    expect((await repo.findById(created.id))?.name).toBe("Filme");
+  });
+
   it("returns null when a type is not found", async () => {
     expect(await repo.findByName("nope")).toBeNull();
+    expect(await repo.findById("missing")).toBeNull();
   });
 });

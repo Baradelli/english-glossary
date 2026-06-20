@@ -5,12 +5,14 @@ import { PrismaExamRepository } from "../prisma/PrismaExamRepository.js";
 import { PrismaSourceRepository } from "../prisma/PrismaSourceRepository.js";
 import { PrismaSourceTypeRepository } from "../prisma/PrismaSourceTypeRepository.js";
 import { PrismaWordRepository } from "../prisma/PrismaWordRepository.js";
+import { PrismaWordSightingRepository } from "../prisma/PrismaWordSightingRepository.js";
 import type { ExamResult } from "../../domain/exam/examResult.js";
 
 const prisma = getTestPrisma();
 const types = new PrismaSourceTypeRepository(prisma);
 const sources = new PrismaSourceRepository(prisma);
 const words = new PrismaWordRepository(prisma);
+const sightings = new PrismaWordSightingRepository(prisma);
 const exams = new PrismaExamRepository(prisma);
 
 const NOW = new Date("2026-06-19T00:00:00.000Z");
@@ -36,7 +38,8 @@ async function seed(): Promise<void> {
     examples: [],
     nextReview: NOW,
   });
-  await words.recordSighting(ramble.id, {
+  await sightings.record({
+    wordId: ramble.id,
     sourceId,
     seenAt: NOW,
     contextSentence: "Sorry, I ramble.",

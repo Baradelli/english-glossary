@@ -13,7 +13,11 @@ export default defineConfig({
     fileParallelism: false,
     coverage: {
       provider: "v8",
-      include: ["src/domain/**/*.ts", "src/infra/**/*.ts"],
+      include: [
+        "src/domain/**/*.ts",
+        "src/infra/**/*.ts",
+        "src/application/**/*.ts",
+      ],
       exclude: [
         "**/*.test.ts",
         "**/index.ts",
@@ -21,6 +25,7 @@ export default defineConfig({
         // Type-only contracts (no runtime code).
         "src/domain/model.ts",
         "src/domain/ports/**",
+        "src/application/dto.ts",
       ],
       reporter: ["text", "text-summary"],
     },

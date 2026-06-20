@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import type { Word, WordSighting } from "../../domain/model.js";
 import type {
-  NewSighting,
+  FirstSighting,
   NewWord,
   SrsUpdate,
   WordRepository,
@@ -12,18 +12,27 @@ export class PrismaWordRepository implements WordRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async create(data: NewWord): Promise<Word> {
-    const row = await this.prisma.word.create({
-      data: {
-        term: data.term,
-        termKey: data.term.toLowerCase(),
-        definitionEn: data.definitionEn,
-        definitionPt: data.definitionPt,
-        examples: JSON.stringify(data.examples),
-        nextReview: data.nextReview,
-        ...(data.createdAt ? { createdAt: data.createdAt } : {}),
-      },
-    });
+    const row = await this.prisma.word.create({ data: this.toCreateData(data) });
     return toWord(row);
+  }
+
+  async createWithFirstSighting(
+    word: NewWord,
+    sighting: FirstSighting,
+  ): Promise<{ word: Word; sighting: WordSighting }> {
+    return this.prisma.$transaction(async (tx) => {
+      const wordRow = await tx.word.create({ data: this.toCreateData(word) });
+      const sightingRow = await tx.wordSighting.create({
+        data: {
+          wordId: wordRow.id,
+          sourceId: sighting.sourceId,
+          seenAt: sighting.seenAt,
+          contextSentence: sighting.contextSentence ?? null,
+          isFirstEncounter: true,
+        },
+      });
+      return { word: toWord(wordRow), sighting: toWordSighting(sightingRow) };
+    });
   }
 
   async findById(id: string): Promise<Word | null> {
@@ -36,6 +45,11 @@ export class PrismaWordRepository implements WordRepository {
       where: { termKey: term.toLowerCase() },
     });
     return row ? toWord(row) : null;
+  }
+
+  async listAll(): Promise<Word[]> {
+    const rows = await this.prisma.word.findMany({ orderBy: { term: "asc" } });
+    return rows.map(toWord);
   }
 
   async listDueForReview(now: Date): Promise<Word[]> {
@@ -59,19 +73,15 @@ export class PrismaWordRepository implements WordRepository {
     return toWord(row);
   }
 
-  async recordSighting(
-    wordId: string,
-    sighting: NewSighting,
-  ): Promise<WordSighting> {
-    const row = await this.prisma.wordSighting.create({
-      data: {
-        wordId,
-        sourceId: sighting.sourceId,
-        seenAt: sighting.seenAt,
-        contextSentence: sighting.contextSentence ?? null,
-        isFirstEncounter: sighting.isFirstEncounter,
-      },
-    });
-    return toWordSighting(row);
+  private toCreateData(data: NewWord) {
+    return {
+      term: data.term,
+      termKey: data.term.toLowerCase(),
+      definitionEn: data.definitionEn,
+      definitionPt: data.definitionPt,
+      examples: JSON.stringify(data.examples),
+      nextReview: data.nextReview,
+      ...(data.createdAt ? { createdAt: data.createdAt } : {}),
+    };
   }
 }

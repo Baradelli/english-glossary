@@ -13,6 +13,11 @@ export class PrismaSourceTypeRepository implements SourceTypeRepository {
     return toSourceType(row);
   }
 
+  async findById(id: string): Promise<SourceType | null> {
+    const row = await this.prisma.sourceType.findUnique({ where: { id } });
+    return row ? toSourceType(row) : null;
+  }
+
   async findByName(name: string): Promise<SourceType | null> {
     const row = await this.prisma.sourceType.findUnique({
       where: { nameKey: name.toLowerCase() },

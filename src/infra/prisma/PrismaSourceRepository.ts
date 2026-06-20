@@ -32,7 +32,15 @@ export class PrismaSourceRepository implements SourceRepository {
   }
 
   async list(): Promise<Source[]> {
-    const rows = await this.prisma.source.findMany();
+    const rows = await this.prisma.source.findMany({ orderBy: { name: "asc" } });
+    return rows.map(toSource);
+  }
+
+  async listByType(sourceTypeId: string): Promise<Source[]> {
+    const rows = await this.prisma.source.findMany({
+      where: { sourceTypeId },
+      orderBy: { name: "asc" },
+    });
     return rows.map(toSource);
   }
 }

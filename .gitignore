@@ -2,6 +2,11 @@ node_modules/
 coverage/
 dist/
 
+# Next.js
+.next/
+next-env.d.ts
+*.tsbuildinfo
+
 # Local SQLite databases (data, not code)
 *.db
 *.db-journal

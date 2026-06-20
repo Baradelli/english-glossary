@@ -8,11 +8,13 @@ describe("createRepositories", () => {
     expect(Object.keys(repos).sort()).toEqual([
       "exams",
       "reviewLogs",
+      "sightings",
       "sourceTypes",
       "sources",
       "words",
     ]);
     expect(typeof repos.words.findByTerm).toBe("function");
+    expect(typeof repos.sightings.listBySource).toBe("function");
     expect(typeof repos.exams.submitCorrection).toBe("function");
   });
 });

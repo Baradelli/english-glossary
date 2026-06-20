@@ -3,7 +3,10 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "preserve",
+    "allowJs": true,
+    "incremental": true,
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
@@ -14,8 +17,23 @@
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "esModuleInterop": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
-    "types": ["vitest/globals", "node"]
+    "noEmit": true,
+    "types": ["vitest/globals", "node"],
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
-  "include": ["src", "test", "vitest.config.ts"]
+  "include": [
+    "src",
+    "test",
+    "app",
+    "next-env.d.ts",
+    ".next/types/**/*.ts",
+    "*.config.ts",
+    "*.config.mjs"
+  ],
+  "exclude": ["node_modules"]
 }

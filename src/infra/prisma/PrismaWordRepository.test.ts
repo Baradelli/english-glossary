@@ -120,30 +120,42 @@ describe("PrismaWordRepository — updateSrs", () => {
   });
 });
 
-describe("PrismaWordRepository — recordSighting", () => {
-  it("records a first encounter with a context sentence", async () => {
-    const word = await repo.create(newWord());
+describe("PrismaWordRepository — listAll", () => {
+  it("returns every word ordered by term", async () => {
+    await repo.create(newWord({ term: "ramble" }));
+    await repo.create(newWord({ term: "abate" }));
+    expect((await repo.listAll()).map((w) => w.term)).toEqual([
+      "abate",
+      "ramble",
+    ]);
+  });
+});
+
+describe("PrismaWordRepository — createWithFirstSighting", () => {
+  it("creates the word and its first sighting atomically", async () => {
     const sourceId = await aSourceId();
-    const sighting = await repo.recordSighting(word.id, {
+    const { word, sighting } = await repo.createWithFirstSighting(newWord(), {
       sourceId,
       seenAt: NOW,
       contextSentence: "Sorry, I tend to ramble.",
-      isFirstEncounter: true,
     });
+    expect(word.id).toBeTruthy();
     expect(sighting.wordId).toBe(word.id);
     expect(sighting.isFirstEncounter).toBe(true);
     expect(sighting.contextSentence).toBe("Sorry, I tend to ramble.");
+
+    // Both rows are actually persisted.
+    expect(await repo.findById(word.id)).not.toBeNull();
   });
 
-  it("records a re-encounter (isFirstEncounter false, no context)", async () => {
-    const word = await repo.create(newWord());
-    const sourceId = await aSourceId();
-    const sighting = await repo.recordSighting(word.id, {
-      sourceId,
-      seenAt: NOW,
-      isFirstEncounter: false,
-    });
-    expect(sighting.isFirstEncounter).toBe(false);
-    expect(sighting.contextSentence).toBeNull();
+  it("rolls back the word if the sighting cannot be created", async () => {
+    await expect(
+      repo.createWithFirstSighting(newWord(), {
+        sourceId: "ghost-source",
+        seenAt: NOW,
+      }),
+    ).rejects.toThrow();
+    // The word must not be left behind.
+    expect(await repo.findByTerm("ramble")).toBeNull();
   });
 });

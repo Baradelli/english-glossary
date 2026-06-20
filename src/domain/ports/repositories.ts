@@ -38,7 +38,9 @@ export interface NewWord {
   readonly createdAt?: Date;
 }
 
+/** A sighting to record against an already-existing word. */
 export interface NewSighting {
+  readonly wordId: string;
   readonly sourceId: string;
   readonly seenAt: Date;
   readonly contextSentence?: string | null;
@@ -46,15 +48,38 @@ export interface NewSighting {
   readonly isFirstEncounter: boolean;
 }
 
+/** The first sighting created together with a brand-new word. */
+export interface FirstSighting {
+  readonly sourceId: string;
+  readonly seenAt: Date;
+  readonly contextSentence?: string | null;
+}
+
 export interface WordRepository {
   create(data: NewWord): Promise<Word>;
+  /**
+   * Creates a new word and its first sighting (isFirstEncounter=true) in one
+   * transaction — the capture flow's atomic unit.
+   */
+  createWithFirstSighting(
+    word: NewWord,
+    sighting: FirstSighting,
+  ): Promise<{ word: Word; sighting: WordSighting }>;
   findById(id: string): Promise<Word | null>;
   /** Case-insensitive exact match (never lemmatised). */
   findByTerm(term: string): Promise<Word | null>;
+  /** Every word, for the glossary list. */
+  listAll(): Promise<Word[]>;
   /** Words whose nextReview is at or before `now`, oldest due first. */
   listDueForReview(now: Date): Promise<Word[]>;
   updateSrs(id: string, srs: SrsUpdate): Promise<Word>;
-  recordSighting(wordId: string, sighting: NewSighting): Promise<WordSighting>;
+}
+
+export interface WordSightingRepository {
+  /** Records a sighting against an existing word (e.g. a re-encounter). */
+  record(data: NewSighting): Promise<WordSighting>;
+  listByWord(wordId: string): Promise<WordSighting[]>;
+  listBySource(sourceId: string): Promise<WordSighting[]>;
 }
 
 export interface NewSource {
@@ -69,11 +94,13 @@ export interface SourceRepository {
   findById(id: string): Promise<Source | null>;
   findByUrl(url: string): Promise<Source | null>;
   list(): Promise<Source[]>;
+  listByType(sourceTypeId: string): Promise<Source[]>;
 }
 
 export interface SourceTypeRepository {
   /** Creates a type; rejects a case-insensitive duplicate name. */
   create(name: string): Promise<SourceType>;
+  findById(id: string): Promise<SourceType | null>;
   findByName(name: string): Promise<SourceType | null>;
   list(): Promise<SourceType[]>;
 }
