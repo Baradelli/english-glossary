@@ -16,6 +16,7 @@ import {
   generateSourceComprehensionExam,
   generateVocabularyExam,
   generateWeeklyReviewExam,
+  reviewWordById,
   submitExamAnswers,
   submitExamCorrection,
 } from "../application/index.js";
@@ -214,4 +215,21 @@ export async function submitCorrectionAction(
     ? ` Termos ignorados (sem correspondência): ${result.unmatchedTerms.join(", ")}.`
     : "";
   return { ok: true, message: `Correção aplicada e SRS atualizado.${ignored}` };
+}
+
+// ── Fluxo B: review ────────────────────────────────────────────────────────
+
+export async function reviewWordAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const wordId = field(formData, "wordId");
+  const quality = Number.parseInt(field(formData, "quality"), 10);
+  try {
+    await reviewWordById({ words: repos.words }, { wordId, quality }, new Date());
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
+  revalidatePath("/review");
+  return { ok: true };
 }

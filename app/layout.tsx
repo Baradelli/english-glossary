@@ -28,6 +28,9 @@ export default function RootLayout({
             <Link href="/sources" className="text-sm text-slate-600 hover:text-slate-900">
               Fontes
             </Link>
+            <Link href="/review" className="text-sm text-slate-600 hover:text-slate-900">
+              Revisão
+            </Link>
             <Link href="/exams" className="text-sm text-slate-600 hover:text-slate-900">
               Provas
             </Link>

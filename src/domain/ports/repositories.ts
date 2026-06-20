@@ -55,6 +55,12 @@ export interface FirstSighting {
   readonly contextSentence?: string | null;
 }
 
+export interface ApplyReviewInput {
+  readonly wordId: string;
+  readonly srs: SrsUpdate;
+  readonly reviewLog: { readonly quality: number; readonly reviewedAt: Date };
+}
+
 export interface WordRepository {
   create(data: NewWord): Promise<Word>;
   /**
@@ -73,6 +79,11 @@ export interface WordRepository {
   /** Words whose nextReview is at or before `now`, oldest due first. */
   listDueForReview(now: Date): Promise<Word[]>;
   updateSrs(id: string, srs: SrsUpdate): Promise<Word>;
+  /**
+   * Applies a review in one transaction: writes the new SRS state to the word
+   * and records the ReviewLog entry. Used by the review flow (§ Fluxo B).
+   */
+  applyReview(input: ApplyReviewInput): Promise<Word>;
 }
 
 export interface WordSightingRepository {

@@ -5,3 +5,4 @@ export * from "./sources.js";
 export * from "./words.js";
 export * from "./sourceDetail.js";
 export * from "./exam.js";
+export * from "./review.js";
