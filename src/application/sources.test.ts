@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { getTestPrisma, resetDb } from "../../test/helpers/db.js";
 import { createRepositories } from "../infra/prisma/repositories.js";
-import { ensureSource, ensureSourceType, listSources } from "./sources.js";
+import {
+  deleteSource,
+  ensureSource,
+  ensureSourceType,
+  listSources,
+} from "./sources.js";
 
 const repos = createRepositories(getTestPrisma());
 
@@ -69,5 +74,17 @@ describe("listSources", () => {
     expect(await listSources(repos.sources)).toHaveLength(2);
     const onlyVideos = await listSources(repos.sources, video);
     expect(onlyVideos.map((s) => s.name)).toEqual(["V"]);
+  });
+});
+
+describe("deleteSource", () => {
+  it("removes the source from the list", async () => {
+    const typeId = (await ensureSourceType(repos.sourceTypes, "Vídeo")).id;
+    const source = await ensureSource(repos.sources, {
+      name: "Errada",
+      sourceTypeId: typeId,
+    });
+    await deleteSource(repos.sources, source.id);
+    expect(await listSources(repos.sources)).toHaveLength(0);
   });
 });

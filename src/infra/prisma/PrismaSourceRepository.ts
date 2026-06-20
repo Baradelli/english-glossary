@@ -43,4 +43,8 @@ export class PrismaSourceRepository implements SourceRepository {
     });
     return rows.map(toSource);
   }
+
+  async delete(id: string): Promise<void> {
+    await this.prisma.source.delete({ where: { id } });
+  }
 }

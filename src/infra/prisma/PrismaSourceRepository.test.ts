@@ -2,9 +2,16 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { getTestPrisma, resetDb } from "../../../test/helpers/db.js";
 import { PrismaSourceRepository } from "./PrismaSourceRepository.js";
 import { PrismaSourceTypeRepository } from "./PrismaSourceTypeRepository.js";
+import { PrismaWordRepository } from "./PrismaWordRepository.js";
+import { PrismaWordSightingRepository } from "./PrismaWordSightingRepository.js";
+import { PrismaExamRepository } from "./PrismaExamRepository.js";
 
-const types = new PrismaSourceTypeRepository(getTestPrisma());
-const repo = new PrismaSourceRepository(getTestPrisma());
+const prisma = getTestPrisma();
+const types = new PrismaSourceTypeRepository(prisma);
+const repo = new PrismaSourceRepository(prisma);
+const words = new PrismaWordRepository(prisma);
+const sightings = new PrismaWordSightingRepository(prisma);
+const exams = new PrismaExamRepository(prisma);
 
 async function aTypeId(): Promise<string> {
   return (await types.create("Vídeo")).id;
@@ -85,5 +92,36 @@ describe("PrismaSourceRepository", () => {
       createdAt,
     });
     expect(source.createdAt.toISOString()).toBe(createdAt.toISOString());
+  });
+
+  it("deletes a source, cascading sightings and nulling exam refs, keeping words", async () => {
+    const now = new Date("2026-06-19T00:00:00.000Z");
+    const sourceTypeId = await aTypeId();
+    const source = await repo.create({ name: "Wrong", sourceTypeId });
+    const word = await words.create({
+      term: "ramble",
+      definitionEn: "x",
+      definitionPt: "y",
+      examples: [],
+      nextReview: now,
+    });
+    await sightings.record({
+      wordId: word.id,
+      sourceId: source.id,
+      seenAt: now,
+      isFirstEncounter: true,
+    });
+    const exam = await exams.create({
+      type: "compreensao",
+      sourceId: source.id,
+      promptText: "p",
+    });
+
+    await repo.delete(source.id);
+
+    expect(await repo.findById(source.id)).toBeNull();
+    expect(await sightings.listBySource(source.id)).toHaveLength(0);
+    expect(await words.findById(word.id)).not.toBeNull(); // word survives
+    expect((await exams.findById(exam.id))?.sourceId).toBeNull(); // exam kept, ref nulled
   });
 });

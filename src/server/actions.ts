@@ -12,6 +12,7 @@ import { redirect } from "next/navigation";
 import {
   autoCorrectExam,
   captureInSource,
+  deleteSource,
   ensureSource,
   ensureSourceType,
   generateSourceComprehensionExam,
@@ -83,6 +84,15 @@ export async function createSourceAction(
   }
   revalidatePath("/sources");
   redirect(`/sources/${id}`);
+}
+
+export async function deleteSourceAction(formData: FormData): Promise<void> {
+  const sourceId = field(formData, "sourceId");
+  if (sourceId) {
+    await deleteSource(repos.sources, sourceId);
+    revalidatePath("/sources");
+  }
+  redirect("/sources");
 }
 
 export async function captureWordAction(

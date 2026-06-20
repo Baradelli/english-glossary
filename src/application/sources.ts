@@ -42,3 +42,14 @@ export async function listSources(
 ): Promise<Source[]> {
   return sourceTypeId ? sources.listByType(sourceTypeId) : sources.list();
 }
+
+/**
+ * Removes a source (e.g. one created by mistake). Sightings cascade away and
+ * exams keep their data with sourceId nulled; words stay in the glossary.
+ */
+export async function deleteSource(
+  sources: SourceRepository,
+  id: string,
+): Promise<void> {
+  await sources.delete(id);
+}

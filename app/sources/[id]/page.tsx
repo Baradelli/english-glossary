@@ -5,6 +5,7 @@ import { getSourceDetail } from "../../../src/application/index.js";
 import { sourceViewDeps } from "../../../src/server/container.js";
 import { CaptureWordForm } from "../../../src/ui/CaptureWordForm.js";
 import { GenerateComprehensionForm } from "../../../src/ui/ExamForms.js";
+import { DeleteSourceButton } from "../../../src/ui/DeleteSourceButton.js";
 import { cardClass } from "../../../src/ui/controls.js";
 import type { SourceWordView } from "../../../src/application/index.js";
 
@@ -107,9 +108,12 @@ export default async function SourcePage({
         </div>
       </section>
 
-      <Link href="/sources" className="text-sm text-blue-600 hover:underline">
-        ← Voltar às fontes
-      </Link>
+      <section className="flex items-center justify-between border-t border-slate-200 pt-6">
+        <Link href="/sources" className="text-sm text-blue-600 hover:underline">
+          ← Voltar às fontes
+        </Link>
+        <DeleteSourceButton sourceId={source.id} />
+      </section>
     </div>
   );
 }

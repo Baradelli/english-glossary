@@ -106,6 +106,11 @@ export interface SourceRepository {
   findByUrl(url: string): Promise<Source | null>;
   list(): Promise<Source[]>;
   listByType(sourceTypeId: string): Promise<Source[]>;
+  /**
+   * Deletes a source. Its sightings cascade away and exams that referenced it
+   * keep their data with sourceId nulled — words are never deleted.
+   */
+  delete(id: string): Promise<void>;
 }
 
 export interface SourceTypeRepository {
