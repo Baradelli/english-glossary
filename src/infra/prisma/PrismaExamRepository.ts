@@ -28,6 +28,21 @@ export class PrismaExamRepository implements ExamRepository {
     return row ? toExam(row) : null;
   }
 
+  async saveAnswers(
+    examId: string,
+    data: { answersText: string; correctionPrompt: string },
+  ): Promise<Exam> {
+    const row = await this.prisma.exam.update({
+      where: { id: examId },
+      data: {
+        answersText: data.answersText,
+        correctionPrompt: data.correctionPrompt,
+        status: "respondida",
+      },
+    });
+    return toExam(row);
+  }
+
   async submitCorrection(
     examId: string,
     correction: ExamCorrection,

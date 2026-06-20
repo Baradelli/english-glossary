@@ -149,6 +149,14 @@ export interface ExamRepository {
   create(data: NewExam): Promise<Exam>;
   findById(id: string): Promise<Exam | null>;
   /**
+   * Stores the pasted exam-and-answers plus the generated correction prompt and
+   * moves the exam to `respondida` (the second turn of the two-turn flow).
+   */
+  saveAnswers(
+    examId: string,
+    data: { readonly answersText: string; readonly correctionPrompt: string },
+  ): Promise<Exam>;
+  /**
    * Persists a correction in a single transaction: marks the exam `corrigida`,
    * stores the result JSON + score, writes one ExamWord per word, and updates
    * each affected word's SRS plus its ReviewLog. All-or-nothing.

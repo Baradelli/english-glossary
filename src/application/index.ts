@@ -4,3 +4,4 @@ export * from "./dto.js";
 export * from "./sources.js";
 export * from "./words.js";
 export * from "./sourceDetail.js";
+export * from "./exam.js";

@@ -1,9 +1,11 @@
 /**
- * PromptBuilder — pure functions that assemble the text of the three study
- * prompts (§6.2). They take plain data (words, definitions, context sentences,
- * an optional transcript) and return a copy-pastable string. Every prompt ends
- * with the single shared instruction that pins the AI to the JSON correction
- * schema — the textual twin of the Zod schema in the ExamResult module.
+ * PromptBuilder — pure functions that assemble the study prompts (§6.2).
+ *
+ * Exams run in TWO TURNS. Turn 1: a question prompt asks the AI to *present* an
+ * exam (the three templates) — no JSON. You answer in the chat and paste the
+ * exam-and-answers back. Turn 2: {@link buildCorrectionPrompt} asks the AI to
+ * grade those answers and reply strictly in the correction JSON schema (the
+ * textual twin of the Zod schema in the ExamResult module).
  *
  * No I/O, no clock, no randomness: output depends only on the inputs.
  */
@@ -28,12 +30,19 @@ export interface SourceComprehensionInput {
   readonly transcript?: string;
 }
 
+export interface CorrectionInput {
+  /** The exam plus the user's answers, pasted back from the AI chat. */
+  readonly answersText: string;
+}
+
+/** Turn-1 closing line: present the exam, defer grading to turn 2. */
+export const PRESENT_EXAM_INSTRUCTION = `Apresente a prova numerada para eu responder aqui nesta conversa. NÃO dê as respostas nem corrija agora — a correção será pedida num segundo passo.`;
+
 /**
- * Shared closing block (§6.2): the strict-JSON instruction plus the correction
- * schema. Identical across all three templates so the AI always replies in the
- * shape the ExamResult parser validates.
+ * Turn-2 closing block (§6.2): the strict-JSON instruction plus the correction
+ * schema. This is the contract the ExamResult parser validates.
  */
-export const JSON_SCHEMA_INSTRUCTION = `Ao final, responda ESTRITAMENTE neste formato JSON, sem nenhum texto fora dele:
+export const JSON_SCHEMA_INSTRUCTION = `Responda ESTRITAMENTE neste formato JSON, sem nenhum texto fora dele:
 
 {
   "score": 0,
@@ -65,8 +74,8 @@ function formatWordList(words: readonly PromptWord[]): string {
   return words.map(formatWordEntry).join("\n");
 }
 
-function withSchema(body: string): string {
-  return `${body}\n\n${JSON_SCHEMA_INSTRUCTION}`;
+function asQuestionPrompt(body: string): string {
+  return `${body}\n\n${PRESENT_EXAM_INSTRUCTION}`;
 }
 
 /**
@@ -78,12 +87,11 @@ export function buildWeeklyReviewPrompt(words: readonly PromptWord[]): string {
   if (words.length === 0) {
     throw new Error("buildWeeklyReviewPrompt requires at least one word.");
   }
-  const body = `Você é um tutor de inglês. Monte uma prova de revisão semanal com as palavras abaixo.
+  return asQuestionPrompt(`Você é um tutor de inglês. Monte uma prova de revisão semanal com as palavras abaixo.
 Varie o tipo de questão entre tradução, completar a frase e uso em contexto, misturando os formatos ao longo da prova.
 
 Palavras da semana:
-${formatWordList(words)}`;
-  return withSchema(body);
+${formatWordList(words)}`);
 }
 
 /**
@@ -95,12 +103,11 @@ export function buildVocabularyExamPrompt(words: readonly PromptWord[]): string 
   if (words.length === 0) {
     throw new Error("buildVocabularyExamPrompt requires at least one word.");
   }
-  const body = `Você é um examinador de vocabulário. Gere exatamente uma questão por palavra.
+  return asQuestionPrompt(`Você é um examinador de vocabulário. Gere exatamente uma questão por palavra.
 Priorize o uso em contexto em vez de tradução decorada. Quando houver frases de contexto real, ancore a questão nelas.
 
 Palavras:
-${formatWordList(words)}`;
-  return withSchema(body);
+${formatWordList(words)}`);
 }
 
 /**
@@ -131,5 +138,20 @@ export function buildSourceComprehensionPrompt(
     sections.push(`Palavras aprendidas nesta fonte:\n${formatWordList(words)}`);
   }
 
-  return withSchema(sections.join("\n\n"));
+  return asQuestionPrompt(sections.join("\n\n"));
+}
+
+/**
+ * Turn 2 — correction prompt. Takes the pasted exam-and-answers and asks the AI
+ * to grade them, replying strictly in the correction JSON schema.
+ */
+export function buildCorrectionPrompt(input: CorrectionInput): string {
+  if (input.answersText.trim().length === 0) {
+    throw new Error("buildCorrectionPrompt requires the exam answers text.");
+  }
+  return `Você é um corretor. Abaixo está a prova com as minhas respostas. Corrija cada item, indique acertos e erros e dê uma nota.
+
+${input.answersText}
+
+${JSON_SCHEMA_INSTRUCTION}`;
 }

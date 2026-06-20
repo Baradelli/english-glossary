@@ -68,6 +68,17 @@ describe("PrismaExamRepository — create", () => {
     });
     expect(exam.createdAt.toISOString()).toBe(createdAt.toISOString());
   });
+
+  it("saveAnswers stores answers + correction prompt and moves to respondida", async () => {
+    const exam = await repo.create({ type: "vocabulario", promptText: "p" });
+    const updated = await repo.saveAnswers(exam.id, {
+      answersText: "minhas respostas",
+      correctionPrompt: "corrija isto",
+    });
+    expect(updated.status).toBe("respondida");
+    expect(updated.answersText).toBe("minhas respostas");
+    expect(updated.correctionPrompt).toBe("corrija isto");
+  });
 });
 
 describe("PrismaExamRepository — submitCorrection (transaction §5)", () => {

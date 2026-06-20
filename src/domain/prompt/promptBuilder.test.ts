@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   JSON_SCHEMA_INSTRUCTION,
+  PRESENT_EXAM_INSTRUCTION,
+  buildCorrectionPrompt,
   buildSourceComprehensionPrompt,
   buildVocabularyExamPrompt,
   buildWeeklyReviewPrompt,
@@ -25,22 +27,26 @@ const rambling: PromptWord = {
 
 const words: PromptWord[] = [ramble, rambling];
 
-describe("JSON_SCHEMA_INSTRUCTION (§6.2 — common closing)", () => {
-  it("locks the strict-JSON instruction and every schema key", () => {
-    expect(JSON_SCHEMA_INSTRUCTION).toContain("ESTRITAMENTE");
-    for (const key of ["score", "items", "term", "correct", "note", "feedback"]) {
-      expect(JSON_SCHEMA_INSTRUCTION).toContain(key);
-    }
+// The two-turn flow (§6.2): the question prompts only ask the AI to present an
+// exam — they must NOT request the correction JSON. That belongs to turn 2.
+describe("question prompts are turn 1 (present the exam, no JSON)", () => {
+  const builders = [
+    ["weekly", () => buildWeeklyReviewPrompt(words)],
+    ["vocabulary", () => buildVocabularyExamPrompt(words)],
+    ["comprehension", () =>
+      buildSourceComprehensionPrompt({ source: { name: "S" }, words })],
+  ] as const;
+
+  it.each(builders)("%s ends with the present-exam instruction", (_n, build) => {
+    expect(build().endsWith(PRESENT_EXAM_INSTRUCTION)).toBe(true);
+  });
+
+  it.each(builders)("%s does not leak the correction schema", (_n, build) => {
+    expect(build()).not.toContain(JSON_SCHEMA_INSTRUCTION);
   });
 });
 
 describe("buildWeeklyReviewPrompt (Template 1)", () => {
-  it("ends with the shared JSON schema instruction", () => {
-    expect(buildWeeklyReviewPrompt(words).endsWith(JSON_SCHEMA_INSTRUCTION)).toBe(
-      true,
-    );
-  });
-
   it("lists every word verbatim (no lemmatisation)", () => {
     const prompt = buildWeeklyReviewPrompt(words);
     expect(prompt).toContain("ramble");
@@ -60,20 +66,14 @@ describe("buildWeeklyReviewPrompt (Template 1)", () => {
 });
 
 describe("buildVocabularyExamPrompt (Template 2)", () => {
-  it("ends with the shared JSON schema instruction", () => {
-    expect(
-      buildVocabularyExamPrompt(words).endsWith(JSON_SCHEMA_INSTRUCTION),
-    ).toBe(true);
-  });
-
   it("includes real context sentences when a word has them", () => {
-    const prompt = buildVocabularyExamPrompt(words);
-    expect(prompt).toContain("Sorry, I tend to ramble when I'm nervous.");
+    expect(buildVocabularyExamPrompt(words)).toContain(
+      "Sorry, I tend to ramble when I'm nervous.",
+    );
   });
 
   it("prioritises use-in-context over rote translation", () => {
-    const prompt = buildVocabularyExamPrompt(words).toLowerCase();
-    expect(prompt).toContain("contexto");
+    expect(buildVocabularyExamPrompt(words).toLowerCase()).toContain("contexto");
   });
 
   it("throws when there are no words", () => {
@@ -84,27 +84,20 @@ describe("buildVocabularyExamPrompt (Template 2)", () => {
 describe("buildSourceComprehensionPrompt (Template 3)", () => {
   const source = { name: "Fireship — TypeScript in 100s" };
 
-  it("ends with the shared JSON schema instruction", () => {
-    const prompt = buildSourceComprehensionPrompt({ source, words });
-    expect(prompt.endsWith(JSON_SCHEMA_INSTRUCTION)).toBe(true);
-  });
-
   it("names the source", () => {
-    const prompt = buildSourceComprehensionPrompt({ source, words });
-    expect(prompt).toContain("Fireship — TypeScript in 100s");
+    expect(buildSourceComprehensionPrompt({ source, words })).toContain(
+      "Fireship — TypeScript in 100s",
+    );
   });
 
-  it("embeds the transcript and grounds questions on it when provided", () => {
+  it("embeds the transcript when provided", () => {
     const transcript = "TypeScript adds static types to JavaScript.";
-    const prompt = buildSourceComprehensionPrompt({
-      source,
-      words,
-      transcript,
-    });
-    expect(prompt).toContain(transcript);
+    expect(
+      buildSourceComprehensionPrompt({ source, words, transcript }),
+    ).toContain(transcript);
   });
 
-  it("does not invent a transcript section when none is given", () => {
+  it("differs depending on whether a transcript is given", () => {
     const withT = buildSourceComprehensionPrompt({
       source,
       words,
@@ -112,7 +105,6 @@ describe("buildSourceComprehensionPrompt (Template 3)", () => {
     });
     const withoutT = buildSourceComprehensionPrompt({ source, words });
     expect(withoutT).not.toContain("some transcript text");
-    // The two prompts must differ — the transcript materially changes the body.
     expect(withoutT).not.toBe(withT);
   });
 
@@ -123,11 +115,29 @@ describe("buildSourceComprehensionPrompt (Template 3)", () => {
   });
 });
 
+describe("buildCorrectionPrompt (turn 2 — the only one that asks for JSON)", () => {
+  const answers = "1. ramble = divagar (minha resposta)\n2. rambling = ???";
+
+  it("embeds the pasted exam-and-answers", () => {
+    expect(buildCorrectionPrompt({ answersText: answers })).toContain(answers);
+  });
+
+  it("ends with the strict-JSON schema instruction and all its keys", () => {
+    const prompt = buildCorrectionPrompt({ answersText: answers });
+    expect(prompt.endsWith(JSON_SCHEMA_INSTRUCTION)).toBe(true);
+    for (const key of ["score", "items", "term", "correct", "note", "feedback"]) {
+      expect(prompt).toContain(key);
+    }
+  });
+
+  it("requires non-empty answers text", () => {
+    expect(() => buildCorrectionPrompt({ answersText: "   " })).toThrow();
+  });
+});
+
 describe("purity", () => {
   it("does not mutate the input words", () => {
-    const input: PromptWord[] = [
-      { term: "ramble", contextSentences: ["one"] },
-    ];
+    const input: PromptWord[] = [{ term: "ramble", contextSentences: ["one"] }];
     const snapshot = JSON.parse(JSON.stringify(input));
     buildWeeklyReviewPrompt(input);
     buildVocabularyExamPrompt(input);
