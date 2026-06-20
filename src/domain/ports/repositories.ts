@@ -126,6 +126,8 @@ export interface NewReviewLog {
 export interface ReviewLogRepository {
   create(data: NewReviewLog): Promise<ReviewLog>;
   listByWord(wordId: string): Promise<ReviewLog[]>;
+  /** Number of reviews recorded at or after `date` (for the dashboard). */
+  countSince(date: Date): Promise<number>;
 }
 
 export interface NewExam {

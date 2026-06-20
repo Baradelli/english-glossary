@@ -62,6 +62,22 @@ export interface SourceWordView {
   readonly contextSentence: string | null;
 }
 
+export interface DashboardMetrics {
+  readonly words: {
+    readonly total: number;
+    readonly nova: number;
+    readonly aprendendo: number;
+    readonly dominada: number;
+  };
+  readonly sources: number;
+  readonly reviewsLast7Days: number;
+  readonly exams: {
+    readonly total: number;
+    readonly corrected: number;
+    readonly averageScore: number | null;
+  };
+}
+
 export interface SourceDetail {
   readonly source: Source;
   readonly sourceType: SourceType | null;

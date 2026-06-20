@@ -28,4 +28,10 @@ export class PrismaReviewLogRepository implements ReviewLogRepository {
     });
     return rows.map(toReviewLog);
   }
+
+  async countSince(date: Date): Promise<number> {
+    return this.prisma.reviewLog.count({
+      where: { reviewedAt: { gte: date } },
+    });
+  }
 }

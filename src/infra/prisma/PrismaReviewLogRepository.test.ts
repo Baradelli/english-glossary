@@ -51,4 +51,22 @@ describe("PrismaReviewLogRepository", () => {
     const logs = await repo.listByWord(wordId);
     expect(logs.map((l) => l.quality)).toEqual([5, 4]);
   });
+
+  it("counts reviews at or after a given date", async () => {
+    const wordId = await aWordId();
+    await repo.create({
+      wordId,
+      quality: 5,
+      reviewedAt: new Date("2026-06-01T00:00:00.000Z"),
+      intervalDays: 1,
+    });
+    await repo.create({
+      wordId,
+      quality: 4,
+      reviewedAt: new Date("2026-06-18T00:00:00.000Z"),
+      intervalDays: 6,
+    });
+    expect(await repo.countSince(new Date("2026-06-15T00:00:00.000Z"))).toBe(1);
+    expect(await repo.countSince(new Date("2026-05-01T00:00:00.000Z"))).toBe(2);
+  });
 });

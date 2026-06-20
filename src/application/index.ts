@@ -6,3 +6,4 @@ export * from "./words.js";
 export * from "./sourceDetail.js";
 export * from "./exam.js";
 export * from "./review.js";
+export * from "./dashboard.js";
