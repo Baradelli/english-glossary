@@ -21,6 +21,19 @@ export interface RecordReencounterInput {
   readonly contextSentence?: string | null;
 }
 
+/**
+ * Capturing a word while on a source page (batch capture). Definition fields
+ * are only required when the term is new; on a re-encounter they're ignored.
+ */
+export interface CaptureInSourceInput {
+  readonly sourceId: string;
+  readonly term: string;
+  readonly definitionEn?: string;
+  readonly definitionPt?: string;
+  readonly examples?: string[];
+  readonly contextSentence?: string | null;
+}
+
 export interface EnsureSourceInput {
   readonly name: string;
   readonly url?: string | null;

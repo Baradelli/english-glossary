@@ -14,6 +14,7 @@ import {
   type WordSightingRepository,
 } from "../domain/index.js";
 import type {
+  CaptureInSourceInput,
   RecordReencounterInput,
   RegisterNewWordInput,
   WordDetail,
@@ -76,6 +77,45 @@ export async function recordReencounter(
     contextSentence: input.contextSentence ?? null,
     isFirstEncounter: false,
   });
+}
+
+/**
+ * Batch-capture entry point used from a source page: if the term already
+ * exists, record a re-encounter; otherwise register it as a new word. Returns
+ * the word and whether it was just created.
+ */
+export async function captureInSource(
+  deps: { words: WordRepository; sightings: WordSightingRepository },
+  input: CaptureInSourceInput,
+  now: Date,
+): Promise<{ word: Word; created: boolean }> {
+  const existing = await deps.words.findByTerm(input.term.trim());
+  if (existing) {
+    await recordReencounter(
+      deps,
+      {
+        wordId: existing.id,
+        sourceId: input.sourceId,
+        contextSentence: input.contextSentence ?? null,
+      },
+      now,
+    );
+    return { word: existing, created: false };
+  }
+
+  const { word } = await registerNewWord(
+    deps.words,
+    {
+      term: input.term,
+      definitionEn: input.definitionEn ?? "",
+      definitionPt: input.definitionPt ?? "",
+      examples: input.examples ?? [],
+      sourceId: input.sourceId,
+      contextSentence: input.contextSentence ?? null,
+    },
+    now,
+  );
+  return { word, created: true };
 }
 
 export async function listGlossary(words: WordRepository): Promise<Word[]> {

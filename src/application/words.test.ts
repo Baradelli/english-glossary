@@ -3,6 +3,7 @@ import { getTestPrisma, resetDb } from "../../test/helpers/db.js";
 import { createRepositories } from "../infra/prisma/repositories.js";
 import { ensureSource, ensureSourceType } from "./sources.js";
 import {
+  captureInSource,
   getWordDetail,
   listGlossary,
   recordReencounter,
@@ -147,6 +148,66 @@ describe("recordReencounter", () => {
         { wordId: "ghost", sourceId },
         NOW,
       ),
+    ).rejects.toThrow();
+  });
+});
+
+describe("captureInSource (batch capture from a source page)", () => {
+  const captureDeps = () => ({ words: repos.words, sightings: repos.sightings });
+
+  it("creates a brand-new word with a first encounter", async () => {
+    const sourceId = await aSource();
+    const { word, created } = await captureInSource(
+      captureDeps(),
+      {
+        sourceId,
+        term: "ramble",
+        definitionEn: "to talk at length",
+        definitionPt: "divagar",
+        examples: ["I ramble."],
+        contextSentence: "here",
+      },
+      NOW,
+    );
+    expect(created).toBe(true);
+    expect(word.term).toBe("ramble");
+    const detail = await getWordDetail(wordDeps, word.id);
+    expect(detail?.sightings).toHaveLength(1);
+  });
+
+  it("records a re-encounter when the term already exists (no duplicate)", async () => {
+    const first = await aSource("Fireship");
+    await registerNewWord(repos.words, input({ sourceId: first }), NOW);
+    const second = await aSource("Movie");
+
+    const { word, created } = await captureInSource(
+      captureDeps(),
+      { sourceId: second, term: "Ramble", contextSentence: "seen again" },
+      NOW,
+    );
+    expect(created).toBe(false);
+    expect((await listGlossary(repos.words)).filter((w) => w.term === "ramble"))
+      .toHaveLength(1);
+    const detail = await getWordDetail(wordDeps, word.id);
+    expect(detail?.sightings).toHaveLength(2);
+  });
+
+  it("records a re-encounter even without a context sentence", async () => {
+    const first = await aSource("Fireship");
+    await registerNewWord(repos.words, input({ sourceId: first }), NOW);
+    const second = await aSource("Movie");
+    const { created } = await captureInSource(
+      captureDeps(),
+      { sourceId: second, term: "ramble" },
+      NOW,
+    );
+    expect(created).toBe(false);
+  });
+
+  it("rejects a new term without the required definitions", async () => {
+    const sourceId = await aSource();
+    await expect(
+      captureInSource(captureDeps(), { sourceId, term: "brandnew" }, NOW),
     ).rejects.toThrow();
   });
 });

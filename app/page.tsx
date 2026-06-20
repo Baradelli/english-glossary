@@ -1,25 +1,43 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
+import { repos } from "../src/server/container.js";
 
-/**
- * Placeholder landing (Phase 3a scaffold). Phase 3b replaces this with the real
- * capture flow: glossary search/register, source & type management, batch
- * capture from a source page, and the per-word / per-source views.
- */
-export default function HomePage(): ReactNode {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage(): Promise<ReactNode> {
+  const [words, sources] = await Promise.all([
+    repos.words.listAll(),
+    repos.sources.list(),
+  ]);
+
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="text-3xl font-bold tracking-tight">English Glossary</h1>
-      <p className="mt-3 text-slate-600">
-        Glossário pessoal de inglês: captura de vocabulário, revisão espaçada
-        (SM-2) e provas geradas por IA.
-      </p>
-      <div className="mt-8 rounded-lg border border-slate-200 bg-white p-5">
-        <p className="text-sm font-medium text-slate-500">Status</p>
-        <p className="mt-1">
-          Núcleo de domínio e persistência prontos. As telas do Fluxo A chegam
-          na próxima fase.
+    <div className="space-y-8">
+      <section>
+        <h1 className="text-3xl font-bold tracking-tight">English Glossary</h1>
+        <p className="mt-2 text-slate-600">
+          Capture vocabulário das fontes que você consome, registre definições e
+          exemplos, e construa seu glossário para revisão espaçada.
         </p>
-      </div>
-    </main>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2">
+        <Link
+          href="/glossary"
+          className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm hover:border-blue-300"
+        >
+          <p className="text-sm font-medium text-slate-500">Glossário</p>
+          <p className="mt-1 text-2xl font-semibold">{words.length}</p>
+          <p className="text-sm text-slate-600">palavras — buscar ou abrir</p>
+        </Link>
+        <Link
+          href="/sources"
+          className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm hover:border-blue-300"
+        >
+          <p className="text-sm font-medium text-slate-500">Fontes</p>
+          <p className="mt-1 text-2xl font-semibold">{sources.length}</p>
+          <p className="text-sm text-slate-600">vídeos, livros… — capturar aqui</p>
+        </Link>
+      </section>
+    </div>
   );
 }
