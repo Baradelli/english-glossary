@@ -14,22 +14,22 @@ const initial: FormState = {};
 export function NewSourceTypeForm(): ReactNode {
   const [state, formAction] = useActionState(createSourceTypeAction, initial);
   return (
-    <form action={formAction} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-      <div className="flex-1">
-        <label className={labelClass} htmlFor="typeName">
-          Novo tipo de fonte
-        </label>
-        <input
-          id="typeName"
-          name="name"
-          placeholder="vídeo, filme, livro…"
-          className={inputClass}
-        />
+    <form action={formAction} className="space-y-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="flex-1">
+          <label className={labelClass} htmlFor="typeName">
+            Novo tipo de fonte
+          </label>
+          <input
+            id="typeName"
+            name="name"
+            placeholder="vídeo, filme, livro…"
+            className={inputClass}
+          />
+        </div>
+        <SubmitButton>Adicionar tipo</SubmitButton>
       </div>
-      <SubmitButton>Adicionar tipo</SubmitButton>
-      <div className="sm:basis-full">
-        <FormMessage state={state} />
-      </div>
+      <FormMessage state={state} />
     </form>
   );
 }
