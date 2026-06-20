@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import { extractJsonText } from "../shared/json.js";
 
 export const WordDefinitionSchema = z.object({
   definitionEn: z.string().min(1, "definitionEn não pode ser vazio"),
@@ -21,7 +22,7 @@ export type ParsedWordDefinition =
 export function parseWordDefinition(text: string): ParsedWordDefinition {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(text);
+    parsed = JSON.parse(extractJsonText(text));
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return { ok: false, error: `JSON inválido: ${message}` };

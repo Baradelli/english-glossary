@@ -15,6 +15,7 @@
  */
 
 import { z } from "zod";
+import { extractJsonText } from "../shared/json.js";
 
 export const ExamResultItemSchema = z.object({
   term: z.string().min(1, "term não pode ser vazio"),
@@ -58,7 +59,7 @@ function formatIssues(error: z.ZodError): string {
 export function parseExamResult(text: string): ParsedExamResult {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(text);
+    parsed = JSON.parse(extractJsonText(text));
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return { ok: false, error: `JSON inválido: ${message}` };

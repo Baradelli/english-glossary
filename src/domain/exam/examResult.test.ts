@@ -33,6 +33,12 @@ describe("parseExamResult — happy path", () => {
     }
   });
 
+  it("accepts JSON wrapped in a markdown code fence", () => {
+    const result = parseExamResult("```json\n" + json(valid) + "\n```");
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value).toEqual(valid);
+  });
+
   it("tolerates the AI adding extra unknown keys (manual-paste robustness)", () => {
     const withExtra = { ...valid, model: "claude", _debug: 123 };
     const result = parseExamResult(json(withExtra));

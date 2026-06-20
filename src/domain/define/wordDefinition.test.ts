@@ -27,6 +27,14 @@ describe("parseWordDefinition", () => {
     }
   });
 
+  it("accepts JSON wrapped in a markdown code fence (Haiku/Claude default)", () => {
+    const raw =
+      '```json\n{ "definitionEn": "to talk at length", "definitionPt": "divagar" }\n```';
+    const result = parseWordDefinition(raw);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.definitionEn).toBe("to talk at length");
+  });
+
   it("rejects non-JSON text with a clear message", () => {
     const result = parseWordDefinition("Claro! Aqui está: ...");
     expect(result.ok).toBe(false);
