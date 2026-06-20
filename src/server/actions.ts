@@ -9,9 +9,11 @@
  */
 
 import { revalidatePath } from "next/cache";
+import { buildDefineWordPrompt } from "../domain/index.js";
 import {
   autoCorrectExam,
   captureInSource,
+  defineWord,
   deleteSource,
   ensureSource,
   ensureSourceType,
@@ -135,6 +137,50 @@ export async function captureWordAction(
     };
   } catch (error) {
     return { error: errorMessage(error) };
+  }
+}
+
+// ── Fluxo A: AI-assisted definitions ───────────────────────────────────────
+
+export interface DefinePromptResult {
+  readonly ok?: boolean;
+  readonly error?: string;
+  readonly prompt?: string;
+}
+
+/** Returns the define-word prompt for the term, to copy into an AI manually. */
+export async function getDefinePromptAction(
+  term: string,
+): Promise<DefinePromptResult> {
+  const trimmed = term.trim();
+  if (!trimmed) return { error: "Informe a palavra primeiro." };
+  return { ok: true, prompt: buildDefineWordPrompt(trimmed) };
+}
+
+export interface DefineResult {
+  readonly ok?: boolean;
+  readonly error?: string;
+  readonly definitionEn?: string;
+  readonly definitionPt?: string;
+}
+
+/** Asks the API adapter for the term's EN/PT definitions (opt-in). */
+export async function defineWordAction(term: string): Promise<DefineResult> {
+  const provider = getAiProvider();
+  if (!provider) {
+    return { error: "Modo API não configurado (defina ANTHROPIC_API_KEY)." };
+  }
+  const trimmed = term.trim();
+  if (!trimmed) return { error: "Informe a palavra primeiro." };
+  try {
+    const def = await defineWord(provider, trimmed);
+    return {
+      ok: true,
+      definitionEn: def.definitionEn,
+      definitionPt: def.definitionPt,
+    };
+  } catch (error) {
+    return { error: `Falha ao gerar definição: ${errorMessage(error)}` };
   }
 }
 

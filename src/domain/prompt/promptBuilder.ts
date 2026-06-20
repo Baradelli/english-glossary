@@ -35,6 +35,26 @@ export interface CorrectionInput {
   readonly answersText: string;
 }
 
+/** Closing block for the define-word prompt: asks for the EN/PT JSON. */
+export const DEFINITION_SCHEMA_INSTRUCTION = `Responda ESTRITAMENTE neste formato JSON, sem nenhum texto fora dele:
+
+{ "definitionEn": "definição curta em inglês", "definitionPt": "definição curta em português" }`;
+
+/**
+ * Prompt that asks the AI to define a term in English and Portuguese, returning
+ * the strict JSON the WordDefinition parser validates. Used to auto-fill (or
+ * copy-paste) definitions when capturing a word.
+ */
+export function buildDefineWordPrompt(term: string): string {
+  const trimmed = term.trim();
+  if (trimmed.length === 0) {
+    throw new Error("buildDefineWordPrompt requires a term.");
+  }
+  return `Você é um dicionário bilíngue. Defina de forma concisa o termo em inglês "${trimmed}" para um estudante brasileiro: uma definição em inglês e uma em português.
+
+${DEFINITION_SCHEMA_INSTRUCTION}`;
+}
+
 /** Turn-1 closing line: present the exam, defer grading to turn 2. */
 export const PRESENT_EXAM_INSTRUCTION = `Apresente a prova numerada para eu responder aqui nesta conversa. NÃO dê as respostas nem corrija agora — a correção será pedida num segundo passo.`;
 

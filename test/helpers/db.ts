@@ -10,6 +10,13 @@ export function getTestPrisma(): PrismaClient {
 
 /** Truncates every table in foreign-key-safe order for test isolation. */
 export async function resetDb(): Promise<void> {
+  // Safety: never wipe a non-test database (e.g. dev.db) if the env ever leaks.
+  const url = process.env.DATABASE_URL ?? "";
+  if (!url.includes("test")) {
+    throw new Error(
+      `resetDb refused: DATABASE_URL does not point at a test database (${url || "unset"}).`,
+    );
+  }
   const db = getTestPrisma();
   await db.examWord.deleteMany();
   await db.reviewLog.deleteMany();

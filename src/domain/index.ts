@@ -3,6 +3,7 @@
 export * from "./srs/sm2.js";
 export * from "./prompt/promptBuilder.js";
 export * from "./exam/examResult.js";
+export * from "./define/wordDefinition.js";
 export * from "./model.js";
 export * from "./ports/repositories.js";
 export * from "./ports/ai.js";
