@@ -151,10 +151,11 @@ export interface DefinePromptResult {
 /** Returns the define-word prompt for the term, to copy into an AI manually. */
 export async function getDefinePromptAction(
   term: string,
+  contextSentence?: string,
 ): Promise<DefinePromptResult> {
   const trimmed = term.trim();
   if (!trimmed) return { error: "Informe a palavra primeiro." };
-  return { ok: true, prompt: buildDefineWordPrompt(trimmed) };
+  return { ok: true, prompt: buildDefineWordPrompt(trimmed, contextSentence) };
 }
 
 export interface DefineResult {
@@ -165,7 +166,10 @@ export interface DefineResult {
 }
 
 /** Asks the API adapter for the term's EN/PT definitions (opt-in). */
-export async function defineWordAction(term: string): Promise<DefineResult> {
+export async function defineWordAction(
+  term: string,
+  contextSentence?: string,
+): Promise<DefineResult> {
   const provider = getAiProvider();
   if (!provider) {
     return { error: "Modo API não configurado (defina ANTHROPIC_API_KEY)." };
@@ -173,7 +177,7 @@ export async function defineWordAction(term: string): Promise<DefineResult> {
   const trimmed = term.trim();
   if (!trimmed) return { error: "Informe a palavra primeiro." };
   try {
-    const def = await defineWord(provider, trimmed);
+    const def = await defineWord(provider, trimmed, contextSentence);
     return {
       ok: true,
       definitionEn: def.definitionEn,

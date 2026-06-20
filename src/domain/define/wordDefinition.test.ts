@@ -11,6 +11,22 @@ describe("buildDefineWordPrompt", () => {
     expect(prompt).toContain("definitionPt");
   });
 
+  it("asks for the general meaning and how the word is used", () => {
+    const prompt = buildDefineWordPrompt("ramble").toLowerCase();
+    expect(prompt).toContain("geral");
+    expect(prompt).toContain("usada");
+  });
+
+  it("embeds the context sentence and prioritises the meaning in it", () => {
+    const prompt = buildDefineWordPrompt("ramble", "He likes to ramble on.");
+    expect(prompt).toContain("He likes to ramble on.");
+    expect(prompt.toLowerCase()).toContain("neste contexto");
+  });
+
+  it("works without a context sentence", () => {
+    expect(buildDefineWordPrompt("ramble", "  ")).toContain("ramble");
+  });
+
   it("throws on an empty term", () => {
     expect(() => buildDefineWordPrompt("   ")).toThrow();
   });

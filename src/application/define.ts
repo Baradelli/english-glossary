@@ -15,8 +15,11 @@ import {
 export async function defineWord(
   provider: AiProvider,
   term: string,
+  contextSentence?: string,
 ): Promise<WordDefinition> {
-  const text = await provider.complete(buildDefineWordPrompt(term));
+  const text = await provider.complete(
+    buildDefineWordPrompt(term, contextSentence),
+  );
   const parsed = parseWordDefinition(text);
   if (!parsed.ok) throw new Error(parsed.error);
   return parsed.value;

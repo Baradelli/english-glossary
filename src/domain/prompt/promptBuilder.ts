@@ -38,19 +38,34 @@ export interface CorrectionInput {
 /** Closing block for the define-word prompt: asks for the EN/PT JSON. */
 export const DEFINITION_SCHEMA_INSTRUCTION = `Responda ESTRITAMENTE neste formato JSON, sem nenhum texto fora dele:
 
-{ "definitionEn": "definição curta em inglês", "definitionPt": "definição curta em português" }`;
+{ "definitionEn": "significado no contexto, depois o geral e como é usada — em inglês", "definitionPt": "significado no contexto, depois o geral e como é usada — em português" }`;
 
 /**
  * Prompt that asks the AI to define a term in English and Portuguese, returning
- * the strict JSON the WordDefinition parser validates. Used to auto-fill (or
+ * the strict JSON the WordDefinition parser validates. When a context sentence
+ * is given, the AI is told to read the meaning in that context first, then give
+ * the general meaning and how the word is used. Used to auto-fill (or
  * copy-paste) definitions when capturing a word.
  */
-export function buildDefineWordPrompt(term: string): string {
+export function buildDefineWordPrompt(
+  term: string,
+  contextSentence?: string,
+): string {
   const trimmed = term.trim();
   if (trimmed.length === 0) {
     throw new Error("buildDefineWordPrompt requires a term.");
   }
-  return `Você é um dicionário bilíngue. Defina de forma concisa o termo em inglês "${trimmed}" para um estudante brasileiro: uma definição em inglês e uma em português.
+  const context = contextSentence?.trim();
+  const contextBlock =
+    context && context.length > 0
+      ? `A palavra apareceu nesta frase: "${context}". Comece entendendo e priorizando o significado exato NESTE contexto.\n\n`
+      : "";
+
+  return `Você é um dicionário bilíngue para um estudante brasileiro de inglês.
+
+${contextBlock}Para o termo em inglês "${trimmed}", em cada idioma (inglês e português) traga, nesta ordem: (1) o significado${
+    context ? " neste contexto" : ""
+  }, (2) o significado geral da palavra, e (3) como a palavra costuma ser usada (registro, colocações comuns ou um exemplo curto de uso). Seja conciso.
 
 ${DEFINITION_SCHEMA_INSTRUCTION}`;
 }

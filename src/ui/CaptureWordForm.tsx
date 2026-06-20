@@ -77,7 +77,8 @@ export function CaptureWordForm({
   async function copyPrompt(): Promise<void> {
     const term = getValues("term").trim();
     if (!term) return void toast.error("Informe a palavra primeiro.");
-    const result = await getDefinePromptAction(term);
+    const context = getValues("contextSentence").trim();
+    const result = await getDefinePromptAction(term, context || undefined);
     if (!result.prompt) return void toast.error(result.error ?? "Erro.");
     try {
       await navigator.clipboard.writeText(result.prompt);
@@ -90,8 +91,9 @@ export function CaptureWordForm({
   async function fillViaApi(): Promise<void> {
     const term = getValues("term").trim();
     if (!term) return void toast.error("Informe a palavra primeiro.");
+    const context = getValues("contextSentence").trim();
     setDefining(true);
-    const result = await defineWordAction(term);
+    const result = await defineWordAction(term, context || undefined);
     setDefining(false);
     if (result.definitionEn && result.definitionPt) {
       setValue("definitionEn", result.definitionEn);
@@ -116,9 +118,24 @@ export function CaptureWordForm({
         </p>
       </div>
 
+      <div>
+        <label className={labelClass} htmlFor="contextSentence">
+          Frase de contexto desta fonte (opcional)
+        </label>
+        <input
+          id="contextSentence"
+          className={inputClass}
+          {...register("contextSentence")}
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          A frase real onde você encontrou a palavra. É usada para gerar a
+          definição no contexto certo.
+        </p>
+      </div>
+
       <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
         <p className="text-xs font-medium text-slate-600">
-          Não sabe a definição? Gere a partir da palavra:
+          Não sabe a definição? Gere a partir da palavra e do contexto:
         </p>
         <div className="mt-2 flex flex-wrap gap-2">
           <button
@@ -173,17 +190,6 @@ export function CaptureWordForm({
           rows={2}
           className={inputClass}
           {...register("examples")}
-        />
-      </div>
-
-      <div>
-        <label className={labelClass} htmlFor="contextSentence">
-          Frase de contexto desta fonte (opcional)
-        </label>
-        <input
-          id="contextSentence"
-          className={inputClass}
-          {...register("contextSentence")}
         />
       </div>
 
