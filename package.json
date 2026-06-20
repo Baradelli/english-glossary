@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Personal English glossary with SM-2 spaced repetition and AI study-prompt generation (domain core).",
+  "description": "Personal English glossary: capture vocabulary from sources, review it with SM-2 spaced repetition, and generate study-prompts for an external AI.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -13,7 +13,8 @@
     "test:cov": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "db:migrate": "prisma migrate dev",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "db:reset": "prisma migrate reset --force"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
