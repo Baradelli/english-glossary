@@ -57,6 +57,10 @@ model WordSighting {
   seenAt           DateTime @default(now())
   contextSentence  String? // the real sentence from the source (optional)
   isFirstEncounter Boolean // word registered here vs. re-encountered
+  // Optional per-source meaning, separate from the word's general definition.
+  definitionEn     String?
+  definitionPt     String?
+  examples         String? // JSON-encoded string[] of examples specific to this source
 
   @@index([wordId])
   @@index([sourceId])

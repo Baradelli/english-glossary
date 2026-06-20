@@ -19,7 +19,7 @@ function WordList({ words }: { words: SourceWordView[] }): ReactNode {
   return (
     <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
       {words.map((entry) => (
-        <li key={entry.word.id} className="px-4 py-3">
+        <li key={entry.sightingId} className="px-4 py-3">
           <Link
             href={`/glossary/${entry.word.id}`}
             className="font-medium hover:underline"
@@ -32,6 +32,12 @@ function WordList({ words }: { words: SourceWordView[] }): ReactNode {
               “{entry.contextSentence}”
             </p>
           ) : null}
+          <Link
+            href={`/sightings/${entry.sightingId}`}
+            className="mt-1 inline-block text-xs font-medium text-blue-600 hover:underline"
+          >
+            Significado/exemplos nesta fonte
+          </Link>
         </li>
       ))}
     </ul>

@@ -48,6 +48,57 @@ describe("PrismaWordSightingRepository — record", () => {
   });
 });
 
+describe("PrismaWordSightingRepository — findById & update", () => {
+  it("starts with no per-source definition and updates it", async () => {
+    const wordId = await aWordId();
+    const sourceId = await aSourceId();
+    const created = await repo.record({
+      wordId,
+      sourceId,
+      seenAt: NOW,
+      isFirstEncounter: true,
+    });
+    expect(created.definitionEn).toBeNull();
+    expect(created.examples).toEqual([]);
+
+    const updated = await repo.update(created.id, {
+      definitionEn: "in this source it means X",
+      definitionPt: "nesta fonte significa X",
+      examples: ["source example 1", "source example 2"],
+      contextSentence: "the real sentence here",
+    });
+    expect(updated.definitionEn).toBe("in this source it means X");
+    expect(updated.definitionPt).toBe("nesta fonte significa X");
+    expect(updated.examples).toEqual(["source example 1", "source example 2"]);
+    expect(updated.contextSentence).toBe("the real sentence here");
+
+    const reloaded = await repo.findById(created.id);
+    expect(reloaded?.definitionEn).toBe("in this source it means X");
+  });
+
+  it("only touches the fields provided (omitted keys stay unchanged)", async () => {
+    const wordId = await aWordId();
+    const sourceId = await aSourceId();
+    const created = await repo.record({
+      wordId,
+      sourceId,
+      seenAt: NOW,
+      contextSentence: "original context",
+      isFirstEncounter: true,
+    });
+    // Empty update: nothing provided — every field must stay as it was.
+    const updated = await repo.update(created.id, {});
+    expect(updated.contextSentence).toBe("original context");
+    expect(updated.definitionEn).toBeNull();
+    expect(updated.definitionPt).toBeNull();
+    expect(updated.examples).toEqual([]);
+  });
+
+  it("returns null for an unknown sighting id", async () => {
+    expect(await repo.findById("missing")).toBeNull();
+  });
+});
+
 describe("PrismaWordSightingRepository — listByWord", () => {
   it("lists a word's sightings across sources, oldest first", async () => {
     const wordId = await aWordId();

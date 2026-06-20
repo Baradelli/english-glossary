@@ -5,6 +5,7 @@ import type {
   FirstSighting,
   NewWord,
   SrsUpdate,
+  UpdateWord,
   WordRepository,
 } from "../../domain/ports/repositories.js";
 import { toWord, toWordSighting } from "./mappers.js";
@@ -51,6 +52,18 @@ export class PrismaWordRepository implements WordRepository {
   async listAll(): Promise<Word[]> {
     const rows = await this.prisma.word.findMany({ orderBy: { term: "asc" } });
     return rows.map(toWord);
+  }
+
+  async update(id: string, data: UpdateWord): Promise<Word> {
+    const row = await this.prisma.word.update({
+      where: { id },
+      data: {
+        definitionEn: data.definitionEn,
+        definitionPt: data.definitionPt,
+        examples: JSON.stringify(data.examples),
+      },
+    });
+    return toWord(row);
   }
 
   async listDueForReview(now: Date): Promise<Word[]> {

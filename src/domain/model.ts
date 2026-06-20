@@ -44,6 +44,11 @@ export interface WordSighting {
   readonly seenAt: Date;
   readonly contextSentence: string | null;
   readonly isFirstEncounter: boolean;
+  /** Optional per-source meaning, separate from the word's general definition. */
+  readonly definitionEn: string | null;
+  readonly definitionPt: string | null;
+  /** Examples specific to this source. */
+  readonly examples: string[];
 }
 
 export interface ReviewLog {

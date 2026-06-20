@@ -38,6 +38,13 @@ export interface NewWord {
   readonly createdAt?: Date;
 }
 
+/** Editable fields of a word (its general definition; term and SRS untouched). */
+export interface UpdateWord {
+  readonly definitionEn: string;
+  readonly definitionPt: string;
+  readonly examples: string[];
+}
+
 /** A sighting to record against an already-existing word. */
 export interface NewSighting {
   readonly wordId: string;
@@ -76,6 +83,8 @@ export interface WordRepository {
   findByTerm(term: string): Promise<Word | null>;
   /** Every word, for the glossary list. */
   listAll(): Promise<Word[]>;
+  /** Edits a word's general definition/examples (not its term or SRS state). */
+  update(id: string, data: UpdateWord): Promise<Word>;
   /** Words whose nextReview is at or before `now`, oldest due first. */
   listDueForReview(now: Date): Promise<Word[]>;
   updateSrs(id: string, srs: SrsUpdate): Promise<Word>;
@@ -86,9 +95,19 @@ export interface WordRepository {
   applyReview(input: ApplyReviewInput): Promise<Word>;
 }
 
+/** Editable per-source fields of a sighting. */
+export interface UpdateSighting {
+  readonly contextSentence?: string | null;
+  readonly definitionEn?: string | null;
+  readonly definitionPt?: string | null;
+  readonly examples?: string[];
+}
+
 export interface WordSightingRepository {
   /** Records a sighting against an existing word (e.g. a re-encounter). */
   record(data: NewSighting): Promise<WordSighting>;
+  findById(id: string): Promise<WordSighting | null>;
+  update(id: string, data: UpdateSighting): Promise<WordSighting>;
   listByWord(wordId: string): Promise<WordSighting[]>;
   listBySource(sourceId: string): Promise<WordSighting[]>;
 }

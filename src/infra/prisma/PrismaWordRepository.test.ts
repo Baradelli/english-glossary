@@ -162,6 +162,23 @@ describe("PrismaWordRepository — createWithFirstSighting", () => {
   });
 });
 
+describe("PrismaWordRepository — update", () => {
+  it("edits definitions and examples without touching term or SRS", async () => {
+    const word = await repo.create(newWord({ term: "ramble" }));
+    const updated = await repo.update(word.id, {
+      definitionEn: "new EN",
+      definitionPt: "novo PT",
+      examples: ["a", "b"],
+    });
+    expect(updated.term).toBe("ramble"); // identity unchanged
+    expect(updated.definitionEn).toBe("new EN");
+    expect(updated.definitionPt).toBe("novo PT");
+    expect(updated.examples).toEqual(["a", "b"]);
+    expect(updated.repetitions).toBe(word.repetitions); // SRS untouched
+    expect(updated.nextReview.toISOString()).toBe(word.nextReview.toISOString());
+  });
+});
+
 describe("PrismaWordRepository — applyReview", () => {
   it("writes the new SRS state and records the review log atomically", async () => {
     const word = await repo.create(newWord());

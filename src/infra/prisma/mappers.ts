@@ -73,6 +73,9 @@ export function toWordSighting(row: PrismaWordSighting): WordSighting {
     seenAt: row.seenAt,
     contextSentence: row.contextSentence,
     isFirstEncounter: row.isFirstEncounter,
+    definitionEn: row.definitionEn,
+    definitionPt: row.definitionPt,
+    examples: row.examples === null ? [] : decodeExamples(row.examples),
   };
 }
 

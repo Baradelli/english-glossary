@@ -47,6 +47,9 @@ const WordSightingBackup = z.object({
   seenAt: Iso,
   contextSentence: z.string().nullable(),
   isFirstEncounter: z.boolean(),
+  definitionEn: z.string().nullable(),
+  definitionPt: z.string().nullable(),
+  examples: z.array(z.string()),
 });
 const ReviewLogBackup = z.object({
   id: z.string(),
@@ -132,6 +135,9 @@ export async function exportAll(prisma: PrismaClient): Promise<Backup> {
       seenAt: r.seenAt.toISOString(),
       contextSentence: r.contextSentence,
       isFirstEncounter: r.isFirstEncounter,
+      definitionEn: r.definitionEn,
+      definitionPt: r.definitionPt,
+      examples: r.examples ? z.array(z.string()).parse(JSON.parse(r.examples)) : [],
     })),
     reviewLogs: reviewLogs.map((r) => ({
       id: r.id,
@@ -221,6 +227,9 @@ export async function importAll(
           seenAt: new Date(s.seenAt),
           contextSentence: s.contextSentence,
           isFirstEncounter: s.isFirstEncounter,
+          definitionEn: s.definitionEn,
+          definitionPt: s.definitionPt,
+          examples: JSON.stringify(s.examples),
         },
       });
     }

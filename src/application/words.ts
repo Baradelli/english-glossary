@@ -15,6 +15,7 @@ import {
 } from "../domain/index.js";
 import type {
   CaptureInSourceInput,
+  EditWordInput,
   RecordReencounterInput,
   RegisterNewWordInput,
   WordDetail,
@@ -122,6 +123,21 @@ export async function listGlossary(words: WordRepository): Promise<Word[]> {
   return words.listAll();
 }
 
+/** Edits a word's general definition and authorial examples (§ word edit). */
+export async function updateWord(
+  words: WordRepository,
+  id: string,
+  input: EditWordInput,
+): Promise<Word> {
+  requireNonEmpty(input.definitionEn, "definitionEn");
+  requireNonEmpty(input.definitionPt, "definitionPt");
+  return words.update(id, {
+    definitionEn: input.definitionEn,
+    definitionPt: input.definitionPt,
+    examples: input.examples,
+  });
+}
+
 export async function searchWord(
   deps: WordViewDeps,
   term: string,
@@ -147,11 +163,17 @@ async function buildWordDetail(
   for (const sighting of sightings) {
     const source = await deps.sources.findById(sighting.sourceId);
     views.push({
+      sightingId: sighting.id,
       sourceId: sighting.sourceId,
       sourceName: source?.name ?? "(fonte removida)",
       seenAt: sighting.seenAt,
       contextSentence: sighting.contextSentence,
       isFirstEncounter: sighting.isFirstEncounter,
+      hasOwnDefinition: Boolean(
+        sighting.definitionEn ||
+          sighting.definitionPt ||
+          sighting.examples.length > 0,
+      ),
     });
   }
   return { word, state: deriveWordState(word), sightings: views };

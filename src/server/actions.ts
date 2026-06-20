@@ -23,6 +23,8 @@ import {
   reviewWordById,
   submitExamAnswers,
   submitExamCorrection,
+  updateSighting,
+  updateWord,
 } from "../application/index.js";
 import {
   captureDeps,
@@ -138,6 +140,50 @@ export async function captureWordAction(
   } catch (error) {
     return { error: errorMessage(error) };
   }
+}
+
+// ── Fluxo A: edit word / edit sighting ──────────────────────────────────────
+
+function linesField(formData: FormData, name: string): string[] {
+  return field(formData, name)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
+export async function updateWordAction(
+  formData: FormData,
+): Promise<FormState> {
+  const wordId = field(formData, "wordId");
+  try {
+    await updateWord(repos.words, wordId, {
+      definitionEn: field(formData, "definitionEn"),
+      definitionPt: field(formData, "definitionPt"),
+      examples: linesField(formData, "examples"),
+    });
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
+  revalidatePath(`/glossary/${wordId}`);
+  return { ok: true, redirectTo: `/glossary/${wordId}` };
+}
+
+export async function updateSightingAction(
+  formData: FormData,
+): Promise<FormState> {
+  const sightingId = field(formData, "sightingId");
+  try {
+    await updateSighting(repos.sightings, sightingId, {
+      contextSentence: field(formData, "contextSentence") || null,
+      definitionEn: field(formData, "definitionEn") || null,
+      definitionPt: field(formData, "definitionPt") || null,
+      examples: linesField(formData, "examples"),
+    });
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
+  revalidatePath(`/sightings/${sightingId}`);
+  return { ok: true, message: "Encontro atualizado." };
 }
 
 // ── Fluxo A: AI-assisted definitions ───────────────────────────────────────

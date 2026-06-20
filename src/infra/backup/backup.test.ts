@@ -38,12 +38,17 @@ async function seed(): Promise<void> {
     examples: [],
     nextReview: NOW,
   });
-  await sightings.record({
+  const sighting = await sightings.record({
     wordId: ramble.id,
     sourceId,
     seenAt: NOW,
     contextSentence: "Sorry, I ramble.",
     isFirstEncounter: true,
+  });
+  await sightings.update(sighting.id, {
+    definitionEn: "here: to talk aimlessly",
+    definitionPt: "aqui: divagar sem rumo",
+    examples: ["source-specific example"],
   });
   const result: ExamResult = {
     score: 50,

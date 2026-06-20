@@ -25,9 +25,17 @@ export default async function WordPage({
   return (
     <div className="space-y-8">
       <section>
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">{word.term}</h1>
-          <StateBadge state={state} />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold">{word.term}</h1>
+            <StateBadge state={state} />
+          </div>
+          <Link
+            href={`/glossary/${word.id}/edit`}
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-50"
+          >
+            Editar
+          </Link>
         </div>
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
@@ -83,6 +91,14 @@ export default async function WordPage({
                   “{sighting.contextSentence}”
                 </p>
               ) : null}
+              <Link
+                href={`/sightings/${sighting.sightingId}`}
+                className="mt-1 inline-block text-xs font-medium text-blue-600 hover:underline"
+              >
+                {sighting.hasOwnDefinition
+                  ? "Ver/editar significado nesta fonte"
+                  : "Adicionar significado/exemplos nesta fonte"}
+              </Link>
             </li>
           ))}
         </ul>

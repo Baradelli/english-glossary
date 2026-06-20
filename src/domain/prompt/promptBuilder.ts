@@ -65,7 +65,7 @@ export function buildDefineWordPrompt(
 
 ${contextBlock}Para o termo em inglês "${trimmed}", em cada idioma (inglês e português) traga, nesta ordem: (1) o significado${
     context ? " neste contexto" : ""
-  }, (2) o significado geral da palavra, e (3) como a palavra costuma ser usada (registro, colocações comuns ou um exemplo curto de uso). Seja conciso.
+  }, (2) o significado geral da palavra, e (3) o registro e as colocações comuns da palavra (sem incluir frases de exemplo, pois há uma seção separada para exemplos). Seja conciso e preciso.
 
 ${DEFINITION_SCHEMA_INSTRUCTION}`;
 }
@@ -134,7 +134,9 @@ ${formatWordList(words)}`);
  * use-in-context over rote translation; when a word has real context
  * sentences, they anchor its question.
  */
-export function buildVocabularyExamPrompt(words: readonly PromptWord[]): string {
+export function buildVocabularyExamPrompt(
+  words: readonly PromptWord[],
+): string {
   if (words.length === 0) {
     throw new Error("buildVocabularyExamPrompt requires at least one word.");
   }

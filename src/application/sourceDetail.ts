@@ -36,6 +36,7 @@ export async function getSourceDetail(
     const word = await deps.words.findById(sighting.wordId);
     if (!word) continue; // defensive: skip dangling sightings
     const view: SourceWordView = {
+      sightingId: sighting.id,
       word,
       seenAt: sighting.seenAt,
       contextSentence: sighting.contextSentence,

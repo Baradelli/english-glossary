@@ -4,7 +4,13 @@
  * the UI consumes these and never touches repositories directly.
  */
 
-import type { Source, SourceType, Word, WordState } from "../domain/index.js";
+import type {
+  Source,
+  SourceType,
+  Word,
+  WordSighting,
+  WordState,
+} from "../domain/index.js";
 
 export interface RegisterNewWordInput {
   readonly term: string;
@@ -42,11 +48,14 @@ export interface EnsureSourceInput {
 
 /** One source where a word was seen, for the per-word view. */
 export interface WordSightingView {
+  readonly sightingId: string;
   readonly sourceId: string;
   readonly sourceName: string;
   readonly seenAt: Date;
   readonly contextSentence: string | null;
   readonly isFirstEncounter: boolean;
+  /** Whether this sighting has its own per-source meaning recorded. */
+  readonly hasOwnDefinition: boolean;
 }
 
 export interface WordDetail {
@@ -57,9 +66,30 @@ export interface WordDetail {
 
 /** One word learned in a source, for the per-source view. */
 export interface SourceWordView {
+  readonly sightingId: string;
   readonly word: Word;
   readonly seenAt: Date;
   readonly contextSentence: string | null;
+}
+
+/** A single sighting (a word seen in a source) with its word and source. */
+export interface SightingDetail {
+  readonly sighting: WordSighting;
+  readonly word: Word | null;
+  readonly source: Source | null;
+}
+
+export interface EditWordInput {
+  readonly definitionEn: string;
+  readonly definitionPt: string;
+  readonly examples: string[];
+}
+
+export interface EditSightingInput {
+  readonly contextSentence?: string | null;
+  readonly definitionEn?: string | null;
+  readonly definitionPt?: string | null;
+  readonly examples?: string[];
 }
 
 export interface DashboardMetrics {

@@ -9,6 +9,7 @@ import {
   recordReencounter,
   registerNewWord,
   searchWord,
+  updateWord,
 } from "./words.js";
 import type { RegisterNewWordInput } from "./dto.js";
 
@@ -208,6 +209,40 @@ describe("captureInSource (batch capture from a source page)", () => {
     const sourceId = await aSource();
     await expect(
       captureInSource(captureDeps(), { sourceId, term: "brandnew" }, NOW),
+    ).rejects.toThrow();
+  });
+});
+
+describe("updateWord", () => {
+  it("edits the general definition and examples", async () => {
+    const sourceId = await aSource();
+    const { word } = await registerNewWord(
+      repos.words,
+      input({ sourceId }),
+      NOW,
+    );
+    const updated = await updateWord(repos.words, word.id, {
+      definitionEn: "edited EN",
+      definitionPt: "PT editado",
+      examples: ["novo exemplo"],
+    });
+    expect(updated.definitionEn).toBe("edited EN");
+    expect(updated.examples).toEqual(["novo exemplo"]);
+  });
+
+  it("requires non-empty definitions", async () => {
+    const sourceId = await aSource();
+    const { word } = await registerNewWord(
+      repos.words,
+      input({ sourceId }),
+      NOW,
+    );
+    await expect(
+      updateWord(repos.words, word.id, {
+        definitionEn: "  ",
+        definitionPt: "y",
+        examples: [],
+      }),
     ).rejects.toThrow();
   });
 });

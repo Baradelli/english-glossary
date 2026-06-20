@@ -4,6 +4,7 @@ export * from "./dto.js";
 export * from "./sources.js";
 export * from "./words.js";
 export * from "./sourceDetail.js";
+export * from "./sighting.js";
 export * from "./exam.js";
 export * from "./review.js";
 export * from "./dashboard.js";
