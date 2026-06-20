@@ -1,0 +1,101 @@
+// Persistence layer (roadmap step 2). SQLite (ADR-002): the file is the backup.
+// Enums and scalar lists are unsupported on SQLite, so `type`/`status` are
+// plain strings (constrained by the domain) and list/JSON fields use `Json`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model SourceType {
+  id        String   @id @default(cuid())
+  name      String // stored as entered
+  nameKey   String   @unique // lowercased name — case-insensitive dedup ("livro" == "Livro")
+  createdAt DateTime @default(now())
+  sources   Source[]
+}
+
+model Source {
+  id           String         @id @default(cuid())
+  name         String
+  url          String?        @unique // unique only when present (book has none)
+  sourceType   SourceType     @relation(fields: [sourceTypeId], references: [id])
+  sourceTypeId String
+  createdAt    DateTime       @default(now())
+  sightings    WordSighting[]
+  exams        Exam[]
+}
+
+model Word {
+  id           String         @id @default(cuid())
+  term         String // stored as entered
+  termKey      String         @unique // lowercased term — case-insensitive dedup, never lemmatised
+  definitionEn String
+  definitionPt String
+  examples     String // JSON-encoded string[] of authorial sentences (SQLite has no Json/array type)
+  // SRS fields (§6 / §6.1). State is derived, never stored.
+  easeFactor   Float          @default(2.5)
+  intervalDays Int            @default(0)
+  repetitions  Int            @default(0)
+  nextReview   DateTime
+  createdAt    DateTime       @default(now())
+  sightings    WordSighting[]
+  reviewLogs   ReviewLog[]
+  examWords    ExamWord[]
+}
+
+model WordSighting {
+  id               String   @id @default(cuid())
+  word             Word     @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  wordId           String
+  source           Source   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  sourceId         String
+  seenAt           DateTime @default(now())
+  contextSentence  String? // the real sentence from the source (optional)
+  isFirstEncounter Boolean // word registered here vs. re-encountered
+
+  @@index([wordId])
+  @@index([sourceId])
+}
+
+model ReviewLog {
+  id           String   @id @default(cuid())
+  word         Word     @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  wordId       String
+  quality      Int // 0..5
+  reviewedAt   DateTime @default(now())
+  intervalDays Int // snapshot of the resulting interval
+
+  @@index([wordId])
+}
+
+model Exam {
+  id               String     @id @default(cuid())
+  type             String // 'semanal' | 'vocabulario' | 'compreensao'
+  source           Source?    @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  sourceId         String?
+  status           String // 'gerada' | 'respondida' | 'corrigida'
+  promptText       String
+  answersText      String? // the exam + answers, pasted back
+  correctionPrompt String? // the generated correction prompt
+  resultJson       String? // JSON-encoded validated ExamResult (SQLite has no Json type)
+  score            Int?
+  createdAt        DateTime   @default(now())
+  examWords        ExamWord[]
+}
+
+model ExamWord {
+  id      String  @id @default(cuid())
+  exam    Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
+  examId  String
+  word    Word    @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  wordId  String
+  correct Boolean
+
+  @@unique([examId, wordId])
+  @@index([wordId])
+}

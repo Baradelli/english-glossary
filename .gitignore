@@ -1,6 +1,12 @@
 node_modules/
 coverage/
 dist/
+
+# Local SQLite databases (data, not code)
+*.db
+*.db-journal
+prisma/*.db
+prisma/*.db-journal
 .env
 .env.*
 !.env.example
