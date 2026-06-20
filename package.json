@@ -22,6 +22,7 @@
     "next": "^15.5.19",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "sweetalert2": "^11.26.25",
     "zod": "^3.23.8"
   },
   "devDependencies": {
