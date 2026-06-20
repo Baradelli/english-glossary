@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -37,6 +38,7 @@ export default function RootLayout({
           </nav>
         </header>
         <main className="mx-auto max-w-4xl px-6 py-10">{children}</main>
+        <Toaster richColors closeButton position="top-right" />
       </body>
     </html>
   );

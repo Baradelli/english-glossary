@@ -1,40 +1,66 @@
 "use client";
 
-import { useRef, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useState, type ReactNode } from "react";
 import { deleteSourceAction } from "../server/actions.js";
-import { confirmAction } from "./dialogs.js";
+import { notify } from "./lib/form.js";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "./components/alert-dialog.js";
 
 /**
- * Deletes a source after a SweetAlert2 confirmation. The sightings recorded in
- * this source are removed; the words themselves stay in the glossary.
+ * Deletes a source after a shadcn-style confirmation dialog. The sightings
+ * recorded in this source are removed; the words stay in the glossary.
  */
 export function DeleteSourceButton({
   sourceId,
 }: {
   sourceId: string;
 }): ReactNode {
-  const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
 
-  async function handleClick(): Promise<void> {
-    const confirmed = await confirmAction({
-      title: "Excluir esta fonte?",
-      text: "Os encontros (sightings) registrados nela serão removidos. As palavras permanecem no glossário.",
-      confirmText: "Excluir",
-      danger: true,
-    });
-    if (confirmed) formRef.current?.requestSubmit();
+  async function onConfirm(): Promise<void> {
+    setPending(true);
+    const fd = new FormData();
+    fd.set("sourceId", sourceId);
+    const result = await deleteSourceAction(fd);
+    setPending(false);
+    if (notify(result) && result?.redirectTo) router.push(result.redirectTo);
   }
 
   return (
-    <form ref={formRef} action={deleteSourceAction}>
-      <input type="hidden" name="sourceId" value={sourceId} />
-      <button
-        type="button"
-        onClick={handleClick}
-        className="rounded-md border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
-      >
+    <AlertDialog>
+      <AlertDialogTrigger className="rounded-md border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50">
         Excluir fonte
-      </button>
-    </form>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Excluir esta fonte?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Os encontros (sightings) registrados nela serão removidos. As
+            palavras permanecem no glossário.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            disabled={pending}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            {pending ? "Excluindo…" : "Excluir"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState, useState, type ReactNode } from "react";
-import { reviewWordAction, type FormState } from "../server/actions.js";
-import { FormMessage, cardClass } from "./controls.js";
-
-const initial: FormState = {};
+import { useRouter } from "next/navigation";
+import { useState, type ReactNode } from "react";
+import { reviewWordAction } from "../server/actions.js";
+import { cardClass } from "./controls.js";
+import { notify } from "./lib/form.js";
 
 const RATINGS = [
   { q: 0, label: "0 · branco", tone: "bg-red-600 hover:bg-red-700" },
@@ -25,8 +25,19 @@ export interface ReviewWordVM {
 
 /** A flashcard: recall first, reveal the answer, then rate 0–5 (SM-2). */
 export function ReviewCard({ word }: { word: ReviewWordVM }): ReactNode {
-  const [state, action, isPending] = useActionState(reviewWordAction, initial);
+  const router = useRouter();
   const [revealed, setRevealed] = useState(false);
+  const [pending, setPending] = useState<number | null>(null);
+
+  async function rate(quality: number): Promise<void> {
+    setPending(quality);
+    const fd = new FormData();
+    fd.set("wordId", word.id);
+    fd.set("quality", String(quality));
+    const result = await reviewWordAction(fd);
+    setPending(null);
+    if (notify(result)) router.refresh(); // word leaves today's queue
+  }
 
   return (
     <li className={cardClass}>
@@ -56,24 +67,19 @@ export function ReviewCard({ word }: { word: ReviewWordVM }): ReactNode {
         </button>
       )}
 
-      <form action={action} className="mt-4">
-        <input type="hidden" name="wordId" value={word.id} />
-        <div className="flex flex-wrap gap-2">
-          {RATINGS.map((rating) => (
-            <button
-              key={rating.q}
-              type="submit"
-              name="quality"
-              value={rating.q}
-              disabled={!revealed || isPending}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40 ${rating.tone}`}
-            >
-              {rating.label}
-            </button>
-          ))}
-        </div>
-      </form>
-      <FormMessage state={state} />
+      <div className="mt-4 flex flex-wrap gap-2">
+        {RATINGS.map((rating) => (
+          <button
+            key={rating.q}
+            type="button"
+            onClick={() => rate(rating.q)}
+            disabled={!revealed || pending !== null}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40 ${rating.tone}`}
+          >
+            {rating.label}
+          </button>
+        ))}
+      </div>
     </li>
   );
 }

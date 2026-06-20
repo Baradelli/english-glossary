@@ -1,7 +1,4 @@
-"use client";
-
 import type { ReactNode } from "react";
-import { useFormStatus } from "react-dom";
 
 /** Shared Tailwind class strings, kept in one place for visual consistency. */
 export const inputClass =
@@ -12,15 +9,16 @@ export const labelClass = "block text-sm font-medium text-slate-700";
 
 export const cardClass = "rounded-lg border border-slate-200 bg-white p-5 shadow-sm";
 
-/** Submit button that disables itself and shows a label while the action runs. */
+/** Submit button driven by React Hook Form's isSubmitting. */
 export function SubmitButton({
   children,
+  pending,
   pendingLabel = "Salvando…",
 }: {
   children: ReactNode;
+  pending: boolean;
   pendingLabel?: string;
 }): ReactNode {
-  const { pending } = useFormStatus();
   return (
     <button
       type="submit"
@@ -32,25 +30,12 @@ export function SubmitButton({
   );
 }
 
-/** Inline success/error banner driven by a server action's returned state. */
-export function FormMessage({
-  state,
+/** Inline validation message for a form field. */
+export function FieldError({
+  message,
 }: {
-  state: { error?: string; message?: string };
+  message?: string | undefined;
 }): ReactNode {
-  if (state.error) {
-    return (
-      <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-        {state.error}
-      </p>
-    );
-  }
-  if (state.message) {
-    return (
-      <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
-        {state.message}
-      </p>
-    );
-  }
-  return null;
+  if (!message) return null;
+  return <p className="mt-1 text-xs text-red-600">{message}</p>;
 }

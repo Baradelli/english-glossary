@@ -1,14 +1,14 @@
 "use server";
 
 /**
- * Server Actions for the capture flow (Fluxo A). Each is a thin adapter: read
- * the form, inject the real clock, delegate to a tested use case, then
- * revalidate/redirect. Validation errors from the domain are caught and
- * returned as form state so the UI can show them inline.
+ * Server Actions for all flows. Each is a thin adapter: read the form, inject
+ * the real clock, delegate to a tested use case, then revalidate/redirect.
+ * Called directly from React Hook Form submit handlers, so the signature is a
+ * plain `(formData) => Promise<FormState>`; validation errors come back as
+ * state (surfaced as a toast / inline message) and never corrupt data.
  */
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import {
   autoCorrectExam,
   captureInSource,
@@ -34,6 +34,8 @@ export interface FormState {
   readonly error?: string;
   readonly ok?: boolean;
   readonly message?: string;
+  /** When set, the client navigates here on success. */
+  readonly redirectTo?: string;
 }
 
 function field(formData: FormData, name: string): string {
@@ -46,7 +48,6 @@ function errorMessage(error: unknown): string {
 }
 
 export async function createSourceTypeAction(
-  _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
   const name = field(formData, "name");
@@ -62,7 +63,6 @@ export async function createSourceTypeAction(
 }
 
 export async function createSourceAction(
-  _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
   const name = field(formData, "name");
@@ -83,20 +83,24 @@ export async function createSourceAction(
     return { error: errorMessage(error) };
   }
   revalidatePath("/sources");
-  redirect(`/sources/${id}`);
+  return { ok: true, redirectTo: `/sources/${id}` };
 }
 
-export async function deleteSourceAction(formData: FormData): Promise<void> {
+export async function deleteSourceAction(
+  formData: FormData,
+): Promise<FormState> {
   const sourceId = field(formData, "sourceId");
-  if (sourceId) {
+  if (!sourceId) return { error: "Fonte ausente." };
+  try {
     await deleteSource(repos.sources, sourceId);
-    revalidatePath("/sources");
+  } catch (error) {
+    return { error: errorMessage(error) };
   }
-  redirect("/sources");
+  revalidatePath("/sources");
+  return { ok: true, redirectTo: "/sources" };
 }
 
 export async function captureWordAction(
-  _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
   const sourceId = field(formData, "sourceId");
@@ -136,23 +140,17 @@ export async function captureWordAction(
 
 // ── Fluxo C: exam cycle ────────────────────────────────────────────────────
 
-export async function generateWeeklyExamAction(
-  _prev: FormState,
-  _formData: FormData,
-): Promise<FormState> {
+export async function generateWeeklyExamAction(): Promise<FormState> {
   let id: string;
   try {
     id = (await generateWeeklyReviewExam(examGenDeps, new Date())).id;
   } catch (error) {
     return { error: errorMessage(error) };
   }
-  redirect(`/exams/${id}`);
+  return { ok: true, redirectTo: `/exams/${id}` };
 }
 
-export async function generateVocabularyExamAction(
-  _prev: FormState,
-  _formData: FormData,
-): Promise<FormState> {
+export async function generateVocabularyExamAction(): Promise<FormState> {
   let id: string;
   try {
     const words = await repos.words.listAll();
@@ -165,11 +163,10 @@ export async function generateVocabularyExamAction(
   } catch (error) {
     return { error: errorMessage(error) };
   }
-  redirect(`/exams/${id}`);
+  return { ok: true, redirectTo: `/exams/${id}` };
 }
 
 export async function generateComprehensionExamAction(
-  _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
   const sourceId = field(formData, "sourceId");
@@ -187,11 +184,10 @@ export async function generateComprehensionExamAction(
   } catch (error) {
     return { error: errorMessage(error) };
   }
-  redirect(`/exams/${id}`);
+  return { ok: true, redirectTo: `/exams/${id}` };
 }
 
 export async function submitAnswersAction(
-  _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
   const examId = field(formData, "examId");
@@ -207,7 +203,6 @@ export async function submitAnswersAction(
 }
 
 export async function submitCorrectionAction(
-  _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
   const examId = field(formData, "examId");
@@ -232,7 +227,6 @@ export async function submitCorrectionAction(
 // ── Fluxo B: review ────────────────────────────────────────────────────────
 
 export async function reviewWordAction(
-  _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
   const wordId = field(formData, "wordId");
@@ -249,7 +243,6 @@ export async function reviewWordAction(
 // ── Fluxo C (opt-in): auto-correct via the API adapter (ADR-001) ────────────
 
 export async function autoCorrectAction(
-  _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
   const provider = getAiProvider();
