@@ -1,0 +1,21 @@
+{
+  "name": "english-glossary",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Personal English glossary with SM-2 spaced repetition and AI study-prompt generation (domain core).",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.8",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}
