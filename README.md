@@ -135,7 +135,9 @@ ramificações não cobertas são guards defensivos para estados que as foreign 
   JSON serializado nos mappers; dedup case-insensitive via colunas normalizadas
   (`termKey`/`nameKey`).
 - **IA via port (`AiProvider`):** o modo Manual (copia-e-cola, custo zero) é o
-  padrão; um `ApiAdapter` opcional fica como evolução, sem tocar no domínio.
+  padrão; o **`ApiAdapter` opt-in** (ativado por `ANTHROPIC_API_KEY`) corrige a
+  prova automaticamente via API, sem tocar no domínio. Modelo configurável por
+  `ANTHROPIC_MODEL` (padrão `claude-opus-4-8`).
 
 ## Limitações conhecidas / evolução
 
@@ -144,7 +146,6 @@ ramificações não cobertas são guards defensivos para estados que as foreign 
   em ADR-002 / §9, mas fora do escopo atual.
 - **Import de backup:** o `importAll` existe e é testado, mas ainda **sem tela**
   (assume banco vazio). O export (download) é a rede de segurança principal.
-- **IA por API:** `ApiAdapter` opcional, ainda não implementado.
 
 ---
 

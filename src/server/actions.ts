@@ -10,6 +10,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
+  autoCorrectExam,
   captureInSource,
   ensureSource,
   ensureSourceType,
@@ -26,6 +27,7 @@ import {
   examGenDeps,
   repos,
 } from "./container.js";
+import { getAiProvider } from "../infra/ai/provider.js";
 
 export interface FormState {
   readonly error?: string;
@@ -232,4 +234,36 @@ export async function reviewWordAction(
   }
   revalidatePath("/review");
   return { ok: true };
+}
+
+// ── Fluxo C (opt-in): auto-correct via the API adapter (ADR-001) ────────────
+
+export async function autoCorrectAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const provider = getAiProvider();
+  if (!provider) {
+    return { error: "Modo API não configurado (defina ANTHROPIC_API_KEY)." };
+  }
+  const examId = field(formData, "examId");
+  const answersText = field(formData, "answersText");
+  if (!answersText) return { error: "Cole a prova com suas respostas." };
+
+  let result;
+  try {
+    result = await autoCorrectExam(
+      { words: repos.words, exams: repos.exams },
+      provider,
+      examId,
+      answersText,
+      new Date(),
+    );
+  } catch (error) {
+    return { error: `Falha ao chamar a IA: ${errorMessage(error)}` };
+  }
+  if (!result.ok) return { error: result.error };
+
+  revalidatePath(`/exams/${examId}`);
+  return { ok: true, message: "Corrigido automaticamente via API." };
 }

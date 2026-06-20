@@ -13,6 +13,7 @@ import {
   buildWeeklyReviewPrompt,
   parseExamResult,
   reviewWord,
+  type AiProvider,
   type Exam,
   type ExamRepository,
   type PromptWord,
@@ -169,4 +170,23 @@ export async function submitExamCorrection(
   });
 
   return { ok: true, exam, unmatchedTerms };
+}
+
+/**
+ * API-mode automation (ADR-001): stores the answers, asks the AiProvider to
+ * grade them with the generated correction prompt, then validates and applies
+ * the result through the same {@link submitExamCorrection} path. Collapses the
+ * manual two-turn copy-paste into one call without bypassing validation.
+ */
+export async function autoCorrectExam(
+  deps: { words: WordRepository; exams: ExamRepository },
+  provider: AiProvider,
+  examId: string,
+  answersText: string,
+  now: Date,
+): Promise<SubmitCorrectionResult> {
+  const exam = await submitExamAnswers(deps.exams, examId, answersText);
+  const correctionPrompt = exam.correctionPrompt ?? "";
+  const resultText = await provider.complete(correctionPrompt);
+  return submitExamCorrection(deps, examId, resultText, now);
 }

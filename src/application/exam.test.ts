@@ -4,6 +4,7 @@ import { createRepositories } from "../infra/prisma/repositories.js";
 import { ensureSource, ensureSourceType } from "./sources.js";
 import { registerNewWord } from "./words.js";
 import {
+  autoCorrectExam,
   generateSourceComprehensionExam,
   generateVocabularyExam,
   generateWeeklyReviewExam,
@@ -11,6 +12,7 @@ import {
   submitExamAnswers,
   submitExamCorrection,
 } from "./exam.js";
+import type { AiProvider } from "../domain/index.js";
 
 const repos = createRepositories(getTestPrisma());
 const NOW = new Date("2026-06-19T00:00:00.000Z");
@@ -229,5 +231,60 @@ describe("submitExamCorrection (the high-risk cycle §6.2)", () => {
     expect(result.error).toMatch(/JSON/i);
     // Exam untouched.
     expect((await repos.exams.findById(examId))?.status).toBe("gerada");
+  });
+});
+
+describe("autoCorrectExam (ADR-001 ApiAdapter path)", () => {
+  // A fake AiProvider stands in for the external API — the legitimate use of a
+  // test double, since the provider IS the boundary we're isolating.
+  function fakeProvider(response: string): AiProvider {
+    return { name: "fake", complete: async () => response };
+  }
+
+  async function aGeneratedExam(): Promise<{ rambleId: string; examId: string }> {
+    const rambleId = await makeWord("ramble");
+    const exam = await generateVocabularyExam(
+      { words: repos.words, exams: repos.exams },
+      [rambleId],
+      NOW,
+    );
+    return { rambleId, examId: exam.id };
+  }
+
+  it("runs the full cycle: answers -> correction prompt -> AI -> validated SRS update", async () => {
+    const { rambleId, examId } = await aGeneratedExam();
+    const provider = fakeProvider(
+      JSON.stringify({
+        score: 100,
+        items: [{ term: "ramble", correct: true, note: "ok" }],
+        feedback: "great",
+      }),
+    );
+
+    const result = await autoCorrectExam(
+      { words: repos.words, exams: repos.exams },
+      provider,
+      examId,
+      "1. ramble = divagar",
+      NOW,
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.exam.status).toBe("corrigida");
+    expect(result.exam.score).toBe(100);
+    expect((await repos.words.findById(rambleId))?.repetitions).toBe(1);
+  });
+
+  it("surfaces a validation error when the AI returns malformed JSON", async () => {
+    const { examId } = await aGeneratedExam();
+    const result = await autoCorrectExam(
+      { words: repos.words, exams: repos.exams },
+      fakeProvider("desculpe, não consegui"),
+      examId,
+      "respostas",
+      NOW,
+    );
+    expect(result.ok).toBe(false);
   });
 });

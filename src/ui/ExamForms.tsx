@@ -2,6 +2,7 @@
 
 import { useActionState, type ReactNode } from "react";
 import {
+  autoCorrectAction,
   generateComprehensionExamAction,
   generateVocabularyExamAction,
   generateWeeklyExamAction,
@@ -73,6 +74,26 @@ export function AnswersForm({ examId }: { examId: string }): ReactNode {
       <FormMessage state={state} />
       <SubmitButton pendingLabel="Gerando correção…">
         Gerar prompt de correção
+      </SubmitButton>
+    </form>
+  );
+}
+
+export function AutoCorrectForm({ examId }: { examId: string }): ReactNode {
+  const [state, action] = useActionState(autoCorrectAction, initial);
+  return (
+    <form action={action} className="space-y-3">
+      <input type="hidden" name="examId" value={examId} />
+      <textarea
+        name="answersText"
+        rows={6}
+        required
+        placeholder="Cole a prova com suas respostas; a IA corrige automaticamente via API…"
+        className={inputClass}
+      />
+      <FormMessage state={state} />
+      <SubmitButton pendingLabel="Corrigindo via API…">
+        Responder e corrigir via API
       </SubmitButton>
     </form>
   );

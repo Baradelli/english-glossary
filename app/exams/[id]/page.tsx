@@ -2,8 +2,13 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { repos } from "../../../src/server/container.js";
+import { getAiProvider } from "../../../src/infra/ai/provider.js";
 import { CopyBlock } from "../../../src/ui/CopyBlock.js";
-import { AnswersForm, CorrectionForm } from "../../../src/ui/ExamForms.js";
+import {
+  AnswersForm,
+  AutoCorrectForm,
+  CorrectionForm,
+} from "../../../src/ui/ExamForms.js";
 import { cardClass } from "../../../src/ui/controls.js";
 import type { ExamType } from "../../../src/domain/index.js";
 
@@ -46,6 +51,8 @@ export default async function ExamPage({
   const exam = await repos.exams.findById(id);
   if (!exam) notFound();
 
+  const apiEnabled = getAiProvider() !== null;
+
   return (
     <div className="space-y-6">
       <header>
@@ -63,6 +70,17 @@ export default async function ExamPage({
           <Step n={2} title="Cole aqui a prova com as suas respostas">
             <AnswersForm examId={exam.id} />
           </Step>
+          {apiEnabled ? (
+            <section className={cardClass}>
+              <h2 className="font-semibold">Atalho — corrigir via API</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Modo API ativo: pule os passos manuais e deixe a IA corrigir.
+              </p>
+              <div className="mt-4">
+                <AutoCorrectForm examId={exam.id} />
+              </div>
+            </section>
+          ) : null}
         </>
       ) : null}
 

@@ -22,6 +22,9 @@ export default defineConfig({
         "**/*.test.ts",
         "**/index.ts",
         "src/infra/prisma/client.ts",
+        // External-API glue — exercised via a fake AiProvider in the use-case
+        // tests; the SDK call itself can't be unit-tested without a live key.
+        "src/infra/ai/**",
         // Type-only contracts (no runtime code).
         "src/domain/model.ts",
         "src/domain/ports/**",
