@@ -10,9 +10,14 @@ import type { ExamResult } from "./exam/examResult.js";
 export type ExamType = "semanal" | "vocabulario" | "compreensao";
 export type ExamStatus = "gerada" | "respondida" | "corrigida";
 
+/** Discriminates a plain dictionary word from a fixed expression/idiom (ADR-005). */
+export type WordKind = "palavra" | "expressao";
+
 export interface Word {
   readonly id: string;
   readonly term: string;
+  /** Whether this entry is a single word or a fixed expression. */
+  readonly kind: WordKind;
   readonly definitionEn: string;
   readonly definitionPt: string;
   readonly examples: string[];

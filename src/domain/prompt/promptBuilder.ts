@@ -38,7 +38,7 @@ export interface CorrectionInput {
 /** Closing block for the define-word prompt: asks for the EN/PT JSON. */
 export const DEFINITION_SCHEMA_INSTRUCTION = `Responda ESTRITAMENTE neste formato JSON, sem nenhum texto fora dele:
 
-{ "definitionEn": "significado no contexto, depois o geral e como é usada — em inglês", "definitionPt": "significado no contexto, depois o geral e como é usada — em português" }`;
+{ "definitionEn": "significado no contexto, depois o geral e como é usada — em inglês", "definitionPt": "significado no contexto, depois o geral e como é usada — em português", "examples": ["frase de exemplo em inglês", "..."] }`;
 
 /**
  * Prompt that asks the AI to define a term in English and Portuguese, returning
@@ -65,7 +65,42 @@ export function buildDefineWordPrompt(
 
 ${contextBlock}Para o termo em inglês "${trimmed}", em cada idioma (inglês e português) traga, nesta ordem: (1) o significado${
     context ? " neste contexto" : ""
-  }, (2) o significado geral da palavra, e (3) o registro e as colocações comuns da palavra (sem incluir frases de exemplo, pois há uma seção separada para exemplos). Seja conciso e preciso.
+  }, (2) o significado geral da palavra, e (3) o registro e as colocações comuns da palavra. Seja conciso e preciso.
+
+Traga também, no campo "examples", no mínimo 3 frases de exemplo em inglês, cobrindo ao máximo a semântica da palavra (sentidos e usos diferentes), e não apenas repetindo o mesmo uso.
+
+${DEFINITION_SCHEMA_INSTRUCTION}`;
+}
+
+/**
+ * Prompt that asks the AI to explain a fixed/idiomatic English expression
+ * ("break a leg", "piece of cake") for a Brazilian learner, returning the same
+ * strict JSON the WordDefinition parser validates. Unlike the word prompt, it
+ * frames the term as an idiom — figurative meaning, when/how to use it, and
+ * register — instead of a dictionary headword. Examples must actually *use* the
+ * expression. Used by the capture flow when the entry kind is "expressao".
+ */
+export function buildDefineExpressionPrompt(
+  term: string,
+  contextSentence?: string,
+): string {
+  const trimmed = term.trim();
+  if (trimmed.length === 0) {
+    throw new Error("buildDefineExpressionPrompt requires a term.");
+  }
+  const context = contextSentence?.trim();
+  const contextBlock =
+    context && context.length > 0
+      ? `A expressão apareceu nesta frase: "${context}". Comece entendendo e priorizando o sentido exato NESTE contexto.\n\n`
+      : "";
+
+  return `Você é um guia bilíngue de expressões idiomáticas do inglês para um estudante brasileiro.
+
+${contextBlock}Para a expressão em inglês "${trimmed}", em cada idioma (inglês e português) traga, nesta ordem: (1) o significado${
+    context ? " neste contexto" : ""
+  }, dando o sentido FIGURADO/idiomático (não o literal palavra a palavra); (2) quando e como a expressão é usada; e (3) o registro (formal, informal ou gíria) e o tom. Seja conciso e preciso.
+
+Traga também, no campo "examples", no mínimo 3 frases de exemplo em inglês que de fato USEM a expressão "${trimmed}" em situações diferentes.
 
 ${DEFINITION_SCHEMA_INSTRUCTION}`;
 }

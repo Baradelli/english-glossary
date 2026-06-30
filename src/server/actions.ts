@@ -9,7 +9,11 @@
  */
 
 import { revalidatePath } from "next/cache";
-import { buildDefineWordPrompt } from "../domain/index.js";
+import {
+  buildDefineExpressionPrompt,
+  buildDefineWordPrompt,
+  type WordKind,
+} from "../domain/index.js";
 import {
   autoCorrectExam,
   captureInSource,
@@ -49,6 +53,11 @@ function field(formData: FormData, name: string): string {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Erro inesperado.";
+}
+
+/** Reads the entry kind from a form, defaulting to "palavra" (ADR-005). */
+function kindField(formData: FormData): WordKind {
+  return field(formData, "kind") === "expressao" ? "expressao" : "palavra";
 }
 
 export async function createSourceTypeAction(
@@ -109,20 +118,24 @@ export async function captureWordAction(
 ): Promise<FormState> {
   const sourceId = field(formData, "sourceId");
   const term = field(formData, "term");
+  const kind = kindField(formData);
   if (!sourceId) return { error: "Fonte ausente." };
-  if (!term) return { error: "Informe a palavra." };
+  if (!term)
+    return { error: kind === "expressao" ? "Informe a expressão." : "Informe a palavra." };
 
   const examples = field(formData, "examples")
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 
+  const label = kind === "expressao" ? "Expressão" : "Palavra";
   try {
     const { word, created } = await captureInSource(
       captureDeps,
       {
         sourceId,
         term,
+        kind,
         definitionEn: field(formData, "definitionEn"),
         definitionPt: field(formData, "definitionPt"),
         examples,
@@ -134,7 +147,7 @@ export async function captureWordAction(
     return {
       ok: true,
       message: created
-        ? `"${word.term}" cadastrada nesta fonte.`
+        ? `${label} "${word.term}" cadastrada nesta fonte.`
         : `Reencontro de "${word.term}" registrado.`,
     };
   } catch (error) {
@@ -194,14 +207,26 @@ export interface DefinePromptResult {
   readonly prompt?: string;
 }
 
-/** Returns the define-word prompt for the term, to copy into an AI manually. */
+/** Returns the define prompt for the term, to copy into an AI manually. */
 export async function getDefinePromptAction(
   term: string,
   contextSentence?: string,
+  kind: WordKind = "palavra",
 ): Promise<DefinePromptResult> {
   const trimmed = term.trim();
-  if (!trimmed) return { error: "Informe a palavra primeiro." };
-  return { ok: true, prompt: buildDefineWordPrompt(trimmed, contextSentence) };
+  if (!trimmed) {
+    return {
+      error:
+        kind === "expressao"
+          ? "Informe a expressão primeiro."
+          : "Informe a palavra primeiro.",
+    };
+  }
+  const prompt =
+    kind === "expressao"
+      ? buildDefineExpressionPrompt(trimmed, contextSentence)
+      : buildDefineWordPrompt(trimmed, contextSentence);
+  return { ok: true, prompt };
 }
 
 export interface DefineResult {
@@ -209,25 +234,35 @@ export interface DefineResult {
   readonly error?: string;
   readonly definitionEn?: string;
   readonly definitionPt?: string;
+  readonly examples?: readonly string[];
 }
 
 /** Asks the API adapter for the term's EN/PT definitions (opt-in). */
 export async function defineWordAction(
   term: string,
   contextSentence?: string,
+  kind: WordKind = "palavra",
 ): Promise<DefineResult> {
   const provider = getAiProvider();
   if (!provider) {
     return { error: "Modo API não configurado (defina ANTHROPIC_API_KEY)." };
   }
   const trimmed = term.trim();
-  if (!trimmed) return { error: "Informe a palavra primeiro." };
+  if (!trimmed) {
+    return {
+      error:
+        kind === "expressao"
+          ? "Informe a expressão primeiro."
+          : "Informe a palavra primeiro.",
+    };
+  }
   try {
-    const def = await defineWord(provider, trimmed, contextSentence);
+    const def = await defineWord(provider, trimmed, contextSentence, kind);
     return {
       ok: true,
       definitionEn: def.definitionEn,
       definitionPt: def.definitionPt,
+      examples: def.examples,
     };
   } catch (error) {
     return { error: `Falha ao gerar definição: ${errorMessage(error)}` };

@@ -6,20 +6,25 @@
  */
 
 import {
+  buildDefineExpressionPrompt,
   buildDefineWordPrompt,
   parseWordDefinition,
   type AiProvider,
   type WordDefinition,
+  type WordKind,
 } from "../domain/index.js";
 
 export async function defineWord(
   provider: AiProvider,
   term: string,
   contextSentence?: string,
+  kind: WordKind = "palavra",
 ): Promise<WordDefinition> {
-  const text = await provider.complete(
-    buildDefineWordPrompt(term, contextSentence),
-  );
+  const prompt =
+    kind === "expressao"
+      ? buildDefineExpressionPrompt(term, contextSentence)
+      : buildDefineWordPrompt(term, contextSentence);
+  const text = await provider.complete(prompt);
   const parsed = parseWordDefinition(text);
   if (!parsed.ok) throw new Error(parsed.error);
   return parsed.value;

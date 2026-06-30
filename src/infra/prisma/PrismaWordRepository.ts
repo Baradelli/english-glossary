@@ -115,6 +115,7 @@ export class PrismaWordRepository implements WordRepository {
     return {
       term: data.term,
       termKey: data.term.toLowerCase(),
+      ...(data.kind ? { kind: data.kind } : {}),
       definitionEn: data.definitionEn,
       definitionPt: data.definitionPt,
       examples: JSON.stringify(data.examples),

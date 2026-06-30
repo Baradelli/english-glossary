@@ -211,6 +211,58 @@ describe("captureInSource (batch capture from a source page)", () => {
       captureInSource(captureDeps(), { sourceId, term: "brandnew" }, NOW),
     ).rejects.toThrow();
   });
+
+  it("defaults a new term to kind 'palavra'", async () => {
+    const sourceId = await aSource();
+    const { word } = await captureInSource(
+      captureDeps(),
+      {
+        sourceId,
+        term: "ramble",
+        definitionEn: "to talk at length",
+        definitionPt: "divagar",
+        examples: ["I ramble."],
+      },
+      NOW,
+    );
+    expect(word.kind).toBe("palavra");
+  });
+
+  it("captures a fixed expression with kind 'expressao'", async () => {
+    const sourceId = await aSource();
+    const { word } = await captureInSource(
+      captureDeps(),
+      {
+        sourceId,
+        term: "break a leg",
+        kind: "expressao",
+        definitionEn: "good luck",
+        definitionPt: "boa sorte",
+        examples: ["Break a leg tonight!"],
+      },
+      NOW,
+    );
+    expect(word.kind).toBe("expressao");
+    expect(word.term).toBe("break a leg");
+  });
+
+  it("keeps the original kind on a re-encounter (dedup by termKey, kind ignored)", async () => {
+    const first = await aSource("Fireship");
+    await registerNewWord(
+      repos.words,
+      input({ sourceId: first, term: "set up", kind: "palavra" }),
+      NOW,
+    );
+    const second = await aSource("Movie");
+
+    const { word, created } = await captureInSource(
+      captureDeps(),
+      { sourceId: second, term: "set up", kind: "expressao" },
+      NOW,
+    );
+    expect(created).toBe(false);
+    expect(word.kind).toBe("palavra"); // existing registration wins
+  });
 });
 
 describe("updateWord", () => {

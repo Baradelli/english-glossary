@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getWordDetail } from "../../../src/application/index.js";
 import { wordViewDeps } from "../../../src/server/container.js";
 import { StateBadge } from "../../../src/ui/StateBadge.js";
+import { KindBadge } from "../../../src/ui/KindBadge.js";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ export default async function WordPage({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold">{word.term}</h1>
+            <KindBadge kind={word.kind} />
             <StateBadge state={state} />
           </div>
           <Link

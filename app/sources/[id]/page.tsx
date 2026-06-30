@@ -8,6 +8,7 @@ import { CaptureWordForm } from "../../../src/ui/CaptureWordForm.js";
 import { GenerateComprehensionForm } from "../../../src/ui/ExamForms.js";
 import { DeleteSourceButton } from "../../../src/ui/DeleteSourceButton.js";
 import { cardClass } from "../../../src/ui/controls.js";
+import { KindBadge } from "../../../src/ui/KindBadge.js";
 import type { SourceWordView } from "../../../src/application/index.js";
 
 export const dynamic = "force-dynamic";
@@ -20,12 +21,15 @@ function WordList({ words }: { words: SourceWordView[] }): ReactNode {
     <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
       {words.map((entry) => (
         <li key={entry.sightingId} className="px-4 py-3">
-          <Link
-            href={`/glossary/${entry.word.id}`}
-            className="font-medium hover:underline"
-          >
-            {entry.word.term}
-          </Link>
+          <span className="inline-flex items-center gap-2">
+            <Link
+              href={`/glossary/${entry.word.id}`}
+              className="font-medium hover:underline"
+            >
+              {entry.word.term}
+            </Link>
+            <KindBadge kind={entry.word.kind} />
+          </span>
           <span className="text-slate-500"> — {entry.word.definitionPt}</span>
           {entry.contextSentence ? (
             <p className="mt-1 text-sm italic text-slate-600">
@@ -80,10 +84,10 @@ export default async function SourcePage({
       </section>
 
       <section className={cardClass}>
-        <h2 className="font-semibold">Capturar palavra nesta fonte</h2>
+        <h2 className="font-semibold">Capturar nesta fonte</h2>
         <p className="mt-1 text-sm text-slate-500">
-          A fonte é o contexto ativo: adicione várias palavras seguidas sem
-          recolar a identificação.
+          A fonte é o contexto ativo: adicione várias palavras ou expressões
+          seguidas sem recolar a identificação.
         </p>
         <div className="mt-4">
           <CaptureWordForm sourceId={source.id} apiEnabled={apiEnabled} />

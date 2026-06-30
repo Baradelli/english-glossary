@@ -8,12 +8,15 @@ import type {
   Source,
   SourceType,
   Word,
+  WordKind,
   WordSighting,
   WordState,
 } from "../domain/index.js";
 
 export interface RegisterNewWordInput {
   readonly term: string;
+  /** "palavra" (default) or "expressao" — see ADR-005. */
+  readonly kind?: WordKind;
   readonly definitionEn: string;
   readonly definitionPt: string;
   readonly examples: string[];
@@ -34,6 +37,8 @@ export interface RecordReencounterInput {
 export interface CaptureInSourceInput {
   readonly sourceId: string;
   readonly term: string;
+  /** "palavra" (default) or "expressao" — only used when the term is new. */
+  readonly kind?: WordKind;
   readonly definitionEn?: string;
   readonly definitionPt?: string;
   readonly examples?: string[];

@@ -49,6 +49,7 @@ export async function registerNewWord(
   return words.createWithFirstSighting(
     {
       term: input.term.trim(),
+      kind: input.kind ?? "palavra",
       definitionEn: input.definitionEn,
       definitionPt: input.definitionPt,
       examples: input.examples,
@@ -92,6 +93,8 @@ export async function captureInSource(
 ): Promise<{ word: Word; created: boolean }> {
   const existing = await deps.words.findByTerm(input.term.trim());
   if (existing) {
+    // Dedup is by termKey, independent of kind: the first registration's kind
+    // wins. Capturing an existing term again only records a re-encounter.
     await recordReencounter(
       deps,
       {
@@ -108,6 +111,7 @@ export async function captureInSource(
     deps.words,
     {
       term: input.term,
+      kind: input.kind ?? "palavra",
       definitionEn: input.definitionEn ?? "",
       definitionPt: input.definitionPt ?? "",
       examples: input.examples ?? [],

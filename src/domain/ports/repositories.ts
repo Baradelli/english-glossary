@@ -16,6 +16,7 @@ import type {
   Source,
   SourceType,
   Word,
+  WordKind,
   WordSighting,
 } from "../model.js";
 import type { ExamResult } from "../exam/examResult.js";
@@ -30,6 +31,8 @@ export interface SrsUpdate {
 
 export interface NewWord {
   readonly term: string;
+  /** Defaults to "palavra" at the persistence boundary when omitted. */
+  readonly kind?: WordKind;
   readonly definitionEn: string;
   readonly definitionPt: string;
   readonly examples: string[];

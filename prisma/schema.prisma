@@ -34,6 +34,7 @@ model Word {
   id           String         @id @default(cuid())
   term         String // stored as entered
   termKey      String         @unique // lowercased term — case-insensitive dedup, never lemmatised
+  kind         String         @default("palavra") // 'palavra' | 'expressao' (ADR-005) — discriminates words from fixed expressions
   definitionEn String
   definitionPt String
   examples     String // JSON-encoded string[] of authorial sentences (SQLite has no Json/array type)

@@ -6,6 +6,7 @@ const baseRow: PrismaWord = {
   id: "w1",
   term: "ramble",
   termKey: "ramble",
+  kind: "palavra",
   definitionEn: "x",
   definitionPt: "y",
   examples: JSON.stringify(["a", "b"]),
@@ -24,5 +25,12 @@ describe("toWord — examples decoding", () => {
   it("throws on a corrupt examples column (not a JSON string array)", () => {
     expect(() => toWord({ ...baseRow, examples: "{}" })).toThrow();
     expect(() => toWord({ ...baseRow, examples: "[1,2]" })).toThrow();
+  });
+});
+
+describe("toWord — kind", () => {
+  it("carries the kind discriminator through", () => {
+    expect(toWord(baseRow).kind).toBe("palavra");
+    expect(toWord({ ...baseRow, kind: "expressao" }).kind).toBe("expressao");
   });
 });

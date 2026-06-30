@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFINITION_SCHEMA_INSTRUCTION,
   JSON_SCHEMA_INSTRUCTION,
   PRESENT_EXAM_INSTRUCTION,
   buildCorrectionPrompt,
+  buildDefineExpressionPrompt,
+  buildDefineWordPrompt,
   buildSourceComprehensionPrompt,
   buildVocabularyExamPrompt,
   buildWeeklyReviewPrompt,
@@ -132,6 +135,44 @@ describe("buildCorrectionPrompt (turn 2 — the only one that asks for JSON)", (
 
   it("requires non-empty answers text", () => {
     expect(() => buildCorrectionPrompt({ answersText: "   " })).toThrow();
+  });
+});
+
+describe("buildDefineExpressionPrompt (idiom-aware define)", () => {
+  it("throws on an empty term", () => {
+    expect(() => buildDefineExpressionPrompt("   ")).toThrow();
+  });
+
+  it("includes the expression verbatim", () => {
+    expect(buildDefineExpressionPrompt("break a leg")).toContain("break a leg");
+  });
+
+  it("frames it as an idiomatic expression (figurative meaning + register)", () => {
+    const prompt = buildDefineExpressionPrompt("break a leg").toLowerCase();
+    expect(prompt).toContain("expressão");
+    expect(prompt).toContain("figurado");
+    expect(prompt).toContain("registro");
+  });
+
+  it("differs from the plain word prompt for the same term", () => {
+    expect(buildDefineExpressionPrompt("piece of cake")).not.toBe(
+      buildDefineWordPrompt("piece of cake"),
+    );
+  });
+
+  it("reuses the same JSON schema instruction (same storage shape)", () => {
+    expect(buildDefineExpressionPrompt("piece of cake")).toContain(
+      DEFINITION_SCHEMA_INSTRUCTION,
+    );
+  });
+
+  it("prioritises the meaning in context when a sentence is given", () => {
+    const withCtx = buildDefineExpressionPrompt(
+      "piece of cake",
+      "The exam was a piece of cake.",
+    );
+    expect(withCtx).toContain("The exam was a piece of cake.");
+    expect(withCtx).not.toBe(buildDefineExpressionPrompt("piece of cake"));
   });
 });
 

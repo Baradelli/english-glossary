@@ -222,6 +222,14 @@ Em todos: a instrução final é idêntica — _"responda ESTRITAMENTE neste for
 - **Fator decisivo:** o volume pessoal não justifica FSRS; SM-2 entrega o valor com complexidade mínima.
 - **Decisão:** SM-2 em v1. FSRS fica como evolução possível atrás da mesma port de agendamento.
 
+### ADR-005: Expressões como `kind` no `Word` (vs. entidade separada)
+
+- **Contexto:** além de palavras, quer cadastrar **expressões** fixas/idiomáticas em inglês ("break a leg", "piece of cake") para estudar. Uma expressão tem a mesma forma e ciclo de vida de uma palavra: forma canônica, significado EN/PT, exemplos, agendamento SRS e sightings em fontes.
+- **Opções:** **A) discriminador** — campo `kind` no `Word` (`"palavra" | "expressao"`), reaproveitando repositórios, fila de revisão, provas, sightings e telas. **B) entidade `Expression` separada** — modelo, port, ações e páginas paralelas.
+- **Fator decisivo:** a sobreposição estrutural é ~90%; uma entidade separada duplicaria toda a pilha hexagonal por um objeto quase idêntico, e ainda quebraria a revisão/provas unificadas.
+- **Decisão:** **A.** `kind String @default("palavra")` no `Word` — coluna aditiva (não-destrutiva: respeita "nunca resetar o dev.db"). Palavras e expressões dividem a mesma fila de revisão e as mesmas provas; diferem só no prompt de definição (idiomático para expressões) e em rótulos/filtros de UI.
+- **Consequências:** custo mínimo (uma coluna + alguns condicionais). Se um dia expressões divergirem muito (campos próprios, cadência diferente), o `Word` fica mais "gordo" — aí valeria reabrir esta decisão e extrair a entidade.
+
 ## 9. Escalabilidade e evolução
 
 Dado o alvo (1 usuário, milhares de registros), **não há gargalo de escala** a tratar — e dizer isso explicitamente faz parte de um bom design. O que medir é comportamental, não de carga: se as datas do SM-2 fazem sentido na prática e se os prompts geram provas úteis.

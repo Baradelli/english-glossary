@@ -21,6 +21,7 @@ import type {
   Source,
   SourceType,
   Word,
+  WordKind,
   WordSighting,
 } from "../../domain/model.js";
 import {
@@ -54,6 +55,7 @@ export function toWord(row: PrismaWord): Word {
   return {
     id: row.id,
     term: row.term,
+    kind: row.kind as WordKind,
     definitionEn: row.definitionEn,
     definitionPt: row.definitionPt,
     examples: decodeExamples(row.examples),
