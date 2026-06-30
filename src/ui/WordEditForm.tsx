@@ -47,8 +47,9 @@ export function WordEditForm({
           <label className={labelClass} htmlFor="definitionEn">
             Definição (EN)
           </label>
-          <input
+          <textarea
             id="definitionEn"
+            rows={3}
             className={inputClass}
             {...register("definitionEn")}
           />
@@ -58,8 +59,9 @@ export function WordEditForm({
           <label className={labelClass} htmlFor="definitionPt">
             Definição (PT)
           </label>
-          <input
+          <textarea
             id="definitionPt"
+            rows={3}
             className={inputClass}
             {...register("definitionPt")}
           />

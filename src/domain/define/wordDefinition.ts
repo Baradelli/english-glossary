@@ -11,6 +11,12 @@ import { extractJsonText } from "../shared/json.js";
 export const WordDefinitionSchema = z.object({
   definitionEn: z.string().min(1, "definitionEn não pode ser vazio"),
   definitionPt: z.string().min(1, "definitionPt não pode ser vazio"),
+  /**
+   * Example sentences (English) the AI is asked to supply — at least 3, spanning
+   * the word's senses. Defaulted to [] so a reply that omits them still parses
+   * (the definitions are too valuable to discard over a missing examples list).
+   */
+  examples: z.array(z.string().min(1)).default([]),
 });
 
 export type WordDefinition = z.infer<typeof WordDefinitionSchema>;

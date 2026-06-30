@@ -17,6 +17,13 @@ describe("buildDefineWordPrompt", () => {
     expect(prompt).toContain("usada");
   });
 
+  it("asks for at least 3 example sentences covering the word's semantics", () => {
+    const prompt = buildDefineWordPrompt("ramble");
+    expect(prompt.toLowerCase()).toContain("no mínimo 3");
+    expect(prompt.toLowerCase()).toContain("semântica");
+    expect(prompt).toContain("examples");
+  });
+
   it("embeds the context sentence and prioritises the meaning in it", () => {
     const prompt = buildDefineWordPrompt("ramble", "He likes to ramble on.");
     expect(prompt).toContain("He likes to ramble on.");
@@ -41,6 +48,27 @@ describe("parseWordDefinition", () => {
     if (result.ok) {
       expect(result.value.definitionPt).toBe("divagar");
     }
+  });
+
+  it("keeps the example sentences the AI returns", () => {
+    const examples = [
+      "He started to ramble about his childhood.",
+      "Don't ramble; get to the point.",
+      "We rambled through the hills all afternoon.",
+    ];
+    const result = parseWordDefinition(
+      JSON.stringify({ definitionEn: "to talk at length", definitionPt: "divagar", examples }),
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.examples).toEqual(examples);
+  });
+
+  it("defaults examples to an empty array when the field is absent", () => {
+    const result = parseWordDefinition(
+      JSON.stringify({ definitionEn: "to talk at length", definitionPt: "divagar" }),
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.examples).toEqual([]);
   });
 
   it("accepts JSON wrapped in a markdown code fence (Haiku/Claude default)", () => {
