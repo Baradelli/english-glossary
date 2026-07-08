@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>English Glossary — seu glossário pessoal de inglês</title>
+<meta name="description" content="App para Windows: capture vocabulário das fontes que você consome, revise com repetição espaçada (SM-2) e teste-se em provas. Offline, gratuito, seus dados só no seu computador." />
+<meta property="og:title" content="English Glossary — seu glossário pessoal de inglês" />
+<meta property="og:description" content="Capture vocabulário de vídeos, livros e podcasts. Revise com repetição espaçada. Funciona offline; seus dados ficam com você." />
+<meta property="og:image" content="https://baradelli.github.io/english-glossary/assets/painel.png" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%231d4ed8'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='Georgia,serif' font-weight='bold'%3EG%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Capa do caderno: azul profundo, constante nos dois esquemas */
+    --cover: oklch(0.32 0.11 262);
+    --cover-deep: oklch(0.26 0.10 262);
+    --cover-ink: oklch(0.97 0.01 262);
+    --cover-muted: oklch(0.85 0.04 262);
+    --accent: oklch(0.55 0.19 262);        /* blue-600 do app */
+    --accent-strong: oklch(0.49 0.19 262); /* hover */
+    /* Miolo do caderno (claro por padrão) */
+    --page: oklch(0.99 0.002 262);
+    --page-2: oklch(0.96 0.006 262);
+    --ink: oklch(0.24 0.02 262);
+    --ink-soft: oklch(0.42 0.02 262);
+    --rule: oklch(0.89 0.01 262);
+    --card: white;
+    --shadow: 0 24px 60px -24px oklch(0.3 0.08 262 / 0.45);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-force="light"]) {
+      --page: oklch(0.17 0.02 262);
+      --page-2: oklch(0.21 0.025 262);
+      --ink: oklch(0.94 0.01 262);
+      --ink-soft: oklch(0.72 0.02 262);
+      --rule: oklch(0.32 0.02 262);
+      --card: oklch(0.22 0.025 262);
+      --shadow: 0 24px 60px -24px oklch(0 0 0 / 0.7);
+    }
+  }
+  :root[data-force="dark"] {
+    --page: oklch(0.17 0.02 262);
+    --page-2: oklch(0.21 0.025 262);
+    --ink: oklch(0.94 0.01 262);
+    --ink-soft: oklch(0.72 0.02 262);
+    --rule: oklch(0.32 0.02 262);
+    --card: oklch(0.22 0.025 262);
+    --shadow: 0 24px 60px -24px oklch(0 0 0 / 0.7);
+  }
+
+  * { box-sizing: border-box; margin: 0; }
+  html { color-scheme: light dark; scroll-behavior: smooth; }
+  body {
+    font-family: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page);
+    color: var(--ink);
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
+    overflow-x: clip;
+  }
+  img { max-width: 100%; height: auto; display: block; }
+  a { color: var(--accent); }
+
+  .wrap { max-width: 68rem; margin-inline: auto; padding-inline: clamp(1.25rem, 4vw, 2.5rem); }
+
+  /* ── Capa ───────────────────────────────────────── */
+  .cover {
+    background:
+      radial-gradient(90rem 40rem at 85% -20%, oklch(0.42 0.13 262 / 0.55), transparent 60%),
+      var(--cover);
+    color: var(--cover-ink);
+    padding-block: clamp(3rem, 7vw, 5.5rem) clamp(3.5rem, 8vw, 6rem);
+    overflow: hidden;
+  }
+  .cover .wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: center;
+  }
+  .brand { display: flex; align-items: baseline; gap: 0.6rem; margin-bottom: clamp(2.5rem, 6vw, 4rem); }
+  .brand strong { font-weight: 800; font-size: 1.05rem; letter-spacing: -0.01em; }
+  .brand span { color: var(--cover-muted); font-size: 0.9rem; }
+  h1 {
+    font-size: clamp(2.2rem, 5.2vw, 3.6rem);
+    font-weight: 800;
+    line-height: 1.06;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+  h1 em { font-style: normal; color: oklch(0.78 0.11 262); }
+  .lede {
+    margin-top: 1.1rem;
+    font-size: clamp(1.02rem, 1.6vw, 1.15rem);
+    color: var(--cover-muted);
+    max-width: 46ch;
+    text-wrap: pretty;
+  }
+  .cta { margin-top: 2rem; display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.25rem; }
+  .btn-down {
+    display: inline-flex; align-items: center; gap: 0.65rem;
+    background: var(--accent); color: white; text-decoration: none;
+    font-weight: 600; font-size: 1.05rem;
+    padding: 0.9rem 1.5rem; border-radius: 0.7rem;
+    box-shadow: 0 10px 30px -10px oklch(0.55 0.19 262 / 0.8);
+    transition: background 0.2s cubic-bezier(0.22, 1, 0.36, 1), transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .btn-down:hover { background: var(--accent-strong); transform: translateY(-1px); }
+  .btn-down svg { flex: none; }
+  .cta-meta { font-size: 0.85rem; color: var(--cover-muted); line-height: 1.45; }
+  .cta-meta a { color: var(--cover-muted); }
+  .shot-hero {
+    border-radius: 0.9rem;
+    box-shadow: var(--shadow), 0 0 0 1px oklch(1 0 0 / 0.12);
+    transform: rotate(0.6deg);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .cover .wrap > * { animation: rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    .cover .wrap > :last-child { animation-delay: 0.12s; }
+    @keyframes rise { from { transform: translateY(14px); } }
+  }
+
+  /* ── Seções ─────────────────────────────────────── */
+  section { padding-block: clamp(3rem, 7vw, 5rem); }
+  h2 {
+    font-size: clamp(1.5rem, 3vw, 2.1rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
+  }
+  .sub { color: var(--ink-soft); max-width: 60ch; margin-top: -1rem; margin-bottom: 2rem; text-wrap: pretty; }
+
+  /* Método: sequência real de 4 passos */
+  .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.5rem 2rem; counter-reset: passo; padding: 0; }
+  @media (max-width: 880px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 480px) { .steps { grid-template-columns: minmax(0, 1fr); } }
+  .steps li { list-style: none; counter-increment: passo; border-top: 2px solid var(--rule); padding-top: 1rem; }
+  .steps li::before {
+    content: counter(passo);
+    font-weight: 800; font-size: 1.6rem; color: var(--accent);
+    display: block; margin-bottom: 0.35rem;
+  }
+  .steps h3 { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.3rem; }
+  .steps p { font-size: 0.95rem; color: var(--ink-soft); }
+
+  /* Telas: imagem + legenda alternadas */
+  .screens { background: var(--page-2); }
+  .screen-row {
+    display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+    gap: clamp(1.5rem, 4vw, 3rem); align-items: center;
+    padding-block: clamp(1.5rem, 3vw, 2.5rem);
+  }
+  .screen-row + .screen-row { border-top: 1px solid var(--rule); }
+  .screen-row:nth-child(even) { grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); }
+  .screen-row:nth-child(even) figure { order: 2; }
+  .screen-row figure img { border-radius: 0.7rem; box-shadow: var(--shadow); border: 1px solid var(--rule); }
+  .screen-row h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.4rem; letter-spacing: -0.01em; }
+  .screen-row p { color: var(--ink-soft); font-size: 0.98rem; max-width: 42ch; text-wrap: pretty; }
+
+  /* Princípios: lista de definição em duas colunas */
+  .traits { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.25rem 3rem; }
+  .traits div { display: grid; grid-template-columns: auto 1fr; gap: 0.9rem; padding-block: 1rem; border-bottom: 1px solid var(--rule); align-items: start; }
+  .traits dt { font-weight: 600; }
+  .traits dd { color: var(--ink-soft); font-size: 0.95rem; }
+
+  /* FAQ */
+  details { border-bottom: 1px solid var(--rule); }
+  summary {
+    cursor: pointer; font-weight: 600; padding-block: 1rem;
+    list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; font-size: 1.3rem; font-weight: 400; color: var(--accent); transition: rotate 0.25s cubic-bezier(0.22, 1, 0.36, 1); }
+  details[open] summary::after { rotate: 45deg; }
+  details p, details ol { color: var(--ink-soft); padding-bottom: 1.1rem; max-width: 65ch; }
+  details ol { padding-left: 1.4rem; }
+  details code { background: var(--page-2); border: 1px solid var(--rule); border-radius: 4px; padding: 0.05em 0.4em; font-size: 0.9em; }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-block: 2rem; font-size: 0.9rem; color: var(--ink-soft);
+    display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; justify-content: space-between;
+  }
+
+  @media (max-width: 760px) {
+    .cover .wrap, .screen-row, .screen-row:nth-child(even) { grid-template-columns: minmax(0, 1fr); }
+    .screen-row:nth-child(even) figure { order: 0; }
+    .shot-hero { transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn-down, summary::after { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <div class="wrap" style="display: block;">
+    <p class="brand"><strong>English Glossary</strong> <span>para Windows</span></p>
+  </div>
+  <div class="wrap">
+    <div>
+      <h1>O inglês que você encontra por aí, <em>guardado para sempre</em>.</h1>
+      <p class="lede">Capture vocabulário dos vídeos, livros e podcasts que você já consome — com a frase original. Revise no ritmo certo com repetição espaçada e comprove em provas.</p>
+      <div class="cta">
+        <a class="btn-down" id="download" href="https://github.com/Baradelli/english-glossary/releases/latest">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5"/><path d="M4 19h16"/></svg>
+          <span id="download-label">Baixar para Windows</span>
+        </a>
+        <p class="cta-meta" id="download-meta">Gratuito · Windows 10/11 (64 bits)<br /><a href="https://github.com/Baradelli/english-glossary/releases">todas as versões</a></p>
+      </div>
+    </div>
+    <img class="shot-hero" src="assets/painel.png" alt="Painel do English Glossary: 8 palavras (novas, aprendendo e dominadas), 3 fontes, 7 revisões na semana e provas corrigidas" width="1280" height="860" fetchpriority="high" />
+  </div>
+</header>
+
+<main>
+  <section class="wrap" id="metodo">
+    <h2>Um método, quatro passos</h2>
+    <ol class="steps">
+      <li>
+        <h3>Registre a fonte</h3>
+        <p>O vídeo do YouTube, o livro, o podcast. O vocabulário nasce de onde você realmente encontrou o inglês.</p>
+      </li>
+      <li>
+        <h3>Capture com contexto</h3>
+        <p>Salve a palavra ou expressão junto com a frase original. Reencontrou em outra fonte? O app registra o reencontro.</p>
+      </li>
+      <li>
+        <h3>Revise no ritmo certo</h3>
+        <p>A repetição espaçada (SM-2) monta sua fila do dia. Você avalia o quanto lembra; o app agenda a próxima revisão.</p>
+      </li>
+      <li>
+        <h3>Prove que aprendeu</h3>
+        <p>Gere provas do seu próprio vocabulário, responda e receba correção com nota — os erros voltam para a fila.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="screens" id="telas">
+    <div class="wrap">
+      <h2>Feito para o dia a dia do estudo</h2>
+      <div class="screen-row">
+        <figure><img src="assets/captura.png" alt="Tela de captura numa fonte do YouTube: campo de palavra ou expressão, frase de contexto e definições EN/PT" width="1280" height="860" loading="lazy" /></figure>
+        <div>
+          <h3>Capture sem sair do flow</h3>
+          <p>Abra a fonte, digite a palavra e a frase em que ela apareceu. Não sabe a definição? O app gera um prompt pronto — ou preenche via IA, se você configurar sua chave.</p>
+        </div>
+      </div>
+      <div class="screen-row">
+        <figure><img src="assets/revisao.png" alt="Fila de revisão com flashcards: quatro palavras para hoje, notas de 0 a 5" width="1280" height="860" loading="lazy" /></figure>
+        <div>
+          <h3>A fila de hoje, e só a de hoje</h3>
+          <p>Nada de listas infinitas. O algoritmo decide o que precisa ser revisto agora; você responde de 0 a 5 e segue o dia.</p>
+        </div>
+      </div>
+      <div class="screen-row">
+        <figure><img src="assets/painel-dark.png" alt="Painel do app no tema escuro" width="1280" height="860" loading="lazy" /></figure>
+        <div>
+          <h3>Claro, escuro ou como o Windows mandar</h3>
+          <p>Tema completo nos dois modos — escolha nas Configurações ou deixe acompanhar o sistema.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap" id="principios">
+    <h2>Seu caderno, suas regras</h2>
+    <dl class="traits">
+      <div><dt>100% offline</dt><dd>Tudo funciona sem internet. Só os recursos opcionais de IA precisam de conexão.</dd></div>
+      <div><dt>Dados só no seu PC</dt><dd>Nada de nuvem nem conta: o banco fica no seu computador, com backup em um arquivo JSON que você guarda onde quiser.</dd></div>
+      <div><dt>IA opcional, chave sua</dt><dd>Definições e correções automáticas via API da Anthropic — se e quando você colar a sua própria chave nas Configurações.</dd></div>
+      <div><dt>Atualiza sozinho</dt><dd>Instalou uma vez, acabou: o app verifica novas versões ao abrir e se atualiza sem você voltar aqui.</dd></div>
+    </dl>
+  </section>
+
+  <section class="wrap" id="faq">
+    <h2>Perguntas frequentes</h2>
+    <details>
+      <summary>O Windows mostrou um aviso azul ("O Windows protegeu o seu PC"). E agora?</summary>
+      <p>É o SmartScreen, padrão para instaladores novos que ainda não têm assinatura digital paga. O download é seguro e o código é aberto. Para continuar:</p>
+      <ol>
+        <li>Clique em <strong>Mais informações</strong>;</li>
+        <li>Clique em <strong>Executar assim mesmo</strong>.</li>
+      </ol>
+      <p>Isso só acontece na primeira instalação — as atualizações automáticas não passam por esse aviso.</p>
+    </details>
+    <details>
+      <summary>Onde ficam os meus dados?</summary>
+      <p>Num banco SQLite local, em <code>%APPDATA%\english-glossary\glossary.db</code>. Desinstalar o app não apaga seus dados, e você pode exportar/restaurar tudo em JSON pela tela de Configurações.</p>
+    </details>
+    <details>
+      <summary>Preciso pagar algo? Preciso de conta?</summary>
+      <p>Não e não. O app é gratuito e não tem cadastro. O único custo possível é o uso opcional da IA, cobrado pela Anthropic direto na sua chave — que você mesmo cria e cola no app.</p>
+    </details>
+    <details>
+      <summary>Como funcionam as atualizações?</summary>
+      <p>Ao abrir, o app verifica silenciosamente se há versão nova nas releases do GitHub, baixa em segundo plano e pergunta se você quer reiniciar agora ou aplicar ao fechar. Sem internet, nada muda — ele simplesmente segue funcionando.</p>
+    </details>
+    <details>
+      <summary>Quais os requisitos?</summary>
+      <p>Windows 10 ou 11, 64 bits. Não precisa de permissão de administrador para instalar.</p>
+    </details>
+  </section>
+</main>
+
+<footer class="wrap">
+  <span>English Glossary — feito por <a href="https://github.com/Baradelli">Vitor Baradelli</a></span>
+  <span><a href="https://github.com/Baradelli/english-glossary">Código no GitHub</a></span>
+</footer>
+
+<script>
+  (function () {
+    var btn = document.getElementById("download");
+    var label = document.getElementById("download-label");
+    var meta = document.getElementById("download-meta");
+    fetch("https://api.github.com/repos/Baradelli/english-glossary/releases/latest")
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (rel) {
+        var exe = (rel.assets || []).find(function (a) { return a.name.endsWith(".exe"); });
+        if (!exe) return;
+        btn.href = exe.browser_download_url;
+        label.textContent = "Baixar para Windows";
+        meta.innerHTML = "Gratuito · " + (rel.tag_name || rel.name) + " · Windows 10/11 (64 bits)<br />" +
+          '<a href="https://github.com/Baradelli/english-glossary/releases">todas as versões</a>';
+      })
+      .catch(function () { /* mantém o fallback para a página de releases */ });
+  })();
+</script>
+
+</body>
+</html>
