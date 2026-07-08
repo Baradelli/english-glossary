@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSourceDetail } from "../../../src/application/index.js";
 import { sourceViewDeps } from "../../../src/server/container.js";
-import { getAiProvider } from "../../../src/infra/ai/provider.js";
+import { getAiProvider } from "../../../src/server/ai.js";
 import { CaptureWordForm } from "../../../src/ui/CaptureWordForm.js";
 import { GenerateComprehensionForm } from "../../../src/ui/ExamForms.js";
 import { DeleteSourceButton } from "../../../src/ui/DeleteSourceButton.js";
@@ -57,7 +57,7 @@ export default async function SourcePage({
   const detail = await getSourceDetail(sourceViewDeps, id);
   if (!detail) notFound();
 
-  const apiEnabled = getAiProvider() !== null;
+  const apiEnabled = (await getAiProvider()) !== null;
   const { source, sourceType, newWords, reencounters, totalWords } = detail;
 
   return (

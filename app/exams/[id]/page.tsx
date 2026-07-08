@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { repos } from "../../../src/server/container.js";
-import { getAiProvider } from "../../../src/infra/ai/provider.js";
+import { getAiProvider } from "../../../src/server/ai.js";
 import { CopyBlock } from "../../../src/ui/CopyBlock.js";
 import {
   AnswersForm,
@@ -51,7 +51,7 @@ export default async function ExamPage({
   const exam = await repos.exams.findById(id);
   if (!exam) notFound();
 
-  const apiEnabled = getAiProvider() !== null;
+  const apiEnabled = (await getAiProvider()) !== null;
 
   return (
     <div className="space-y-6">

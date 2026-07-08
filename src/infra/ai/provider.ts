@@ -2,11 +2,16 @@ import type { AiProvider } from "../../domain/index.js";
 import { ApiAiProvider } from "./ApiAiProvider.js";
 
 /**
- * Returns the configured AiProvider, or null in Manual mode (the default).
- * The API adapter is opt-in: it activates only when ANTHROPIC_API_KEY is set.
+ * Pure factory: builds the AiProvider from an already-resolved config, or
+ * returns null in Manual mode (the default). Deciding *where* the config
+ * comes from (settings store, env fallback) is the server layer's job — see
+ * `src/server/ai.ts` — so this stays a plain, network-free function that unit
+ * tests can call directly.
  */
-export function getAiProvider(): AiProvider | null {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return null;
-  return new ApiAiProvider({ apiKey, model: process.env.ANTHROPIC_MODEL });
+export function createAiProvider(config: {
+  apiKey: string | null;
+  model: string | null;
+}): AiProvider | null {
+  if (!config.apiKey) return null;
+  return new ApiAiProvider({ apiKey: config.apiKey, model: config.model ?? undefined });
 }

@@ -36,7 +36,7 @@ import {
   examGenDeps,
   repos,
 } from "./container.js";
-import { getAiProvider } from "../infra/ai/provider.js";
+import { getAiProvider } from "./ai.js";
 
 export interface FormState {
   readonly error?: string;
@@ -243,9 +243,9 @@ export async function defineWordAction(
   contextSentence?: string,
   kind: WordKind = "palavra",
 ): Promise<DefineResult> {
-  const provider = getAiProvider();
+  const provider = await getAiProvider();
   if (!provider) {
-    return { error: "Modo API não configurado (defina ANTHROPIC_API_KEY)." };
+    return { error: "Modo API não configurado. Adicione sua chave de API em Configurações." };
   }
   const trimmed = term.trim();
   if (!trimmed) {
@@ -376,9 +376,9 @@ export async function reviewWordAction(
 export async function autoCorrectAction(
   formData: FormData,
 ): Promise<FormState> {
-  const provider = getAiProvider();
+  const provider = await getAiProvider();
   if (!provider) {
-    return { error: "Modo API não configurado (defina ANTHROPIC_API_KEY)." };
+    return { error: "Modo API não configurado. Adicione sua chave de API em Configurações." };
   }
   const examId = field(formData, "examId");
   const answersText = field(formData, "answersText");
