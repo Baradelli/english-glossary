@@ -21,6 +21,15 @@ extraResources:
   - from: prisma/migrations
     to: migrations
 asar: true
+# Use the already-extracted Electron dist from node_modules instead of unzipping a
+# downloaded copy. On this machine Kaspersky's real-time scanner holds freshly
+# extracted .asar files just long enough for electron-builder's unlink of
+# default_app.asar to fail with EBUSY; copying from a dist the scanner already
+# knows sidesteps the race (and skips a redundant download).
+electronDist: node_modules/electron/dist
+# Dash-separated name so the local artifact, the GitHub asset and latest.yml all
+# agree byte-for-byte (GitHub mangles spaces in asset names to dots on upload).
+artifactName: English-Glossary-Setup-${version}.${ext}
 win:
   target: nsis
 nsis:
