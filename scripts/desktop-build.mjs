@@ -1,0 +1,177 @@
+#!/usr/bin/env node
+// desktop build orchestrator: produce a self-contained Next server we can fork.
+//
+// Electron (later tasks) will fork `.next/standalone/server.js` as a child
+// process. Next's `output: "standalone"` traces the server + its node_modules
+// into `.next/standalone`, but leaves three gaps we patch here:
+//   1. `.next/static` (and `public/`) are NOT copied into standalone — Next
+//      assumes a CDN serves them; we serve them ourselves, so we copy them in.
+//   2. Next copies the project's `.env*` into standalone. THIS project's `.env`
+//      holds a REAL ANTHROPIC_API_KEY, so we delete every `.env*` from the
+//      standalone output and hard-fail if any survives — a key must never ship.
+//   3. The standalone package.json's "type" must match the module system of
+//      the generated `server.js`, or Node throws at startup. Empirically, Next
+//      15.5.x emits an ESM server.js (top-level `import`, `import.meta.url`),
+//      which needs "type":"module"; older/other outputs are CommonJS and need
+//      "type":"commonjs". We DETECT server.js's format and set "type" to match,
+//      rather than assuming (its node_modules deps keep their own package.json,
+//      so this top-level patch is safe either way).
+//
+// Run: node scripts/desktop-build.mjs  (npm run desktop:build)
+
+import { spawnSync } from "node:child_process";
+import {
+  cpSync,
+  existsSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const standaloneDir = path.join(rootDir, ".next", "standalone");
+
+function log(stage, message) {
+  console.log(`[desktop-build:${stage}] ${message}`);
+}
+
+function fail(stage, message) {
+  console.error(`[desktop-build:${stage}] ERROR: ${message}`);
+  process.exit(1);
+}
+
+// ---------------------------------------------------------------------------
+// stage: build — next build with standalone output.
+// ---------------------------------------------------------------------------
+function stageBuild() {
+  log("build", "running `next build` with NEXT_OUTPUT=standalone…");
+  const result = spawnSync("npx", ["next", "build"], {
+    cwd: rootDir,
+    stdio: "inherit",
+    shell: true,
+    env: { ...process.env, NEXT_OUTPUT: "standalone" },
+  });
+  if (result.status !== 0) {
+    fail("build", `next build exited with code ${result.status ?? "null"}`);
+  }
+  if (!existsSync(standaloneDir)) {
+    fail("build", `expected standalone output at ${standaloneDir}, not found`);
+  }
+  log("build", "next build complete.");
+}
+
+// ---------------------------------------------------------------------------
+// stage: prepare — copy statics, strip secrets, fix module type.
+// ---------------------------------------------------------------------------
+function copyStatics() {
+  const staticSrc = path.join(rootDir, ".next", "static");
+  const staticDest = path.join(standaloneDir, ".next", "static");
+  if (!existsSync(staticSrc)) {
+    fail("prepare", `.next/static not found at ${staticSrc} (build incomplete?)`);
+  }
+  cpSync(staticSrc, staticDest, { recursive: true });
+  log("prepare", "copied .next/static → .next/standalone/.next/static");
+
+  // public/ does not exist in this project; copy only if it appears later.
+  const publicSrc = path.join(rootDir, "public");
+  if (existsSync(publicSrc)) {
+    cpSync(publicSrc, path.join(standaloneDir, "public"), { recursive: true });
+    log("prepare", "copied public/ → .next/standalone/public");
+  } else {
+    log("prepare", "no public/ directory — skipping (optional).");
+  }
+}
+
+function stripEnvFiles() {
+  // SECURITY-CRITICAL: Next copies .env/.env.local/etc. into the standalone
+  // output, and this project's .env carries a real API key. Delete them all,
+  // then assert none remain. Never ship a standalone with a .env.
+  const envFiles = () =>
+    readdirSync(standaloneDir).filter((name) => name.startsWith(".env"));
+
+  const found = envFiles();
+  for (const name of found) {
+    rmSync(path.join(standaloneDir, name), { force: true });
+    log("prepare", `deleted secret file .next/standalone/${name}`);
+  }
+  if (found.length === 0) {
+    log("prepare", "no .env* files in standalone output (nothing to delete).");
+  }
+
+  const remaining = envFiles();
+  if (remaining.length > 0) {
+    fail(
+      "prepare",
+      `.env* still present in standalone after deletion: ${remaining.join(", ")} — refusing to continue.`,
+    );
+  }
+  log("prepare", "verified: no .env* remain in standalone output.");
+}
+
+function fixModuleType() {
+  const pkgPath = path.join(standaloneDir, "package.json");
+  if (!existsSync(pkgPath)) {
+    log("prepare", "no standalone package.json — skipping type patch.");
+    return;
+  }
+  const serverPath = path.join(standaloneDir, "server.js");
+  const serverSrc = existsSync(serverPath) ? readFileSync(serverPath, "utf8") : "";
+  // ESM markers: a top-level `import …` statement or `import.meta` usage.
+  // (Next 15.5.x emits ESM here; a CJS server.js would use require/module.exports.)
+  const serverIsEsm =
+    /^\s*import[\s{*]/m.test(serverSrc) || /\bimport\.meta\b/.test(serverSrc);
+  const desiredType = serverIsEsm ? "module" : "commonjs";
+  const format = serverIsEsm ? "ESM" : "CommonJS";
+
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+  if (pkg.type !== desiredType) {
+    const prev = pkg.type ?? "unset";
+    pkg.type = desiredType;
+    writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
+    log(
+      "prepare",
+      `patched standalone package.json "type": ${prev} → ${desiredType} (server.js is ${format}).`,
+    );
+  } else {
+    log(
+      "prepare",
+      `standalone package.json "type" already "${pkg.type}", matches server.js (${format}) — no patch needed.`,
+    );
+  }
+}
+
+function copyBootstrapFiles() {
+  // These arrive in Tasks 9-10 (migration runner + CJS bootstrap). Copy if present.
+  const serverDir = path.join(rootDir, "electron", "server");
+  for (const file of ["bootstrap.cjs", "migrate.cjs"]) {
+    const src = path.join(serverDir, file);
+    if (existsSync(src)) {
+      cpSync(src, path.join(standaloneDir, file));
+      log("prepare", `copied electron/server/${file} → .next/standalone/${file}`);
+    } else {
+      log("prepare", `electron/server/${file} not present yet — skip (Tasks 9-10).`);
+    }
+  }
+}
+
+function stagePrepare() {
+  log("prepare", "preparing standalone directory…");
+  copyStatics();
+  stripEnvFiles();
+  fixModuleType();
+  copyBootstrapFiles();
+  log("prepare", "standalone directory ready.");
+}
+
+// ---------------------------------------------------------------------------
+// stage: bundle main (Task 10) — esbuild the Electron main process (CJS).
+// stage: package (Task 12) — electron-builder → NSIS installer.
+// (Structure left in place; not implemented in this task.)
+// ---------------------------------------------------------------------------
+
+stageBuild();
+stagePrepare();
+log("done", "desktop build finished. standalone at .next/standalone");
