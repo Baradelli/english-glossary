@@ -16,3 +16,6 @@ prisma/*.db-journal
 .env.*
 !.env.example
 *.log
+
+# SDD scratch (ledger/briefs)
+.superpowers/
