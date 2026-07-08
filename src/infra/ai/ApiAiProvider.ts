@@ -2,12 +2,13 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { AiProvider } from "../../domain/index.js";
 
 /** Default model. ADR-001's cost note assumed Sonnet; override via ANTHROPIC_MODEL. */
-const DEFAULT_MODEL = "claude-opus-4-8";
+export const DEFAULT_MODEL = "claude-opus-4-8";
 
 /**
  * ApiAdapter (ADR-001) — implements the AiProvider port by calling the Claude
  * Messages API through the official SDK. Opt-in: only instantiated when an API
- * key is configured (see {@link getAiProvider}).
+ * key is configured (see {@link createAiProvider} in `src/infra/ai/provider.ts`,
+ * composed with the effective config by `src/server/ai.ts`).
  */
 export class ApiAiProvider implements AiProvider {
   readonly name = "api";

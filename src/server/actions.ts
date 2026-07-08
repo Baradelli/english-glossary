@@ -24,12 +24,16 @@ import {
   generateSourceComprehensionExam,
   generateVocabularyExam,
   generateWeeklyReviewExam,
+  getEffectiveAiConfig,
   reviewWordById,
   submitExamAnswers,
   submitExamCorrection,
   updateSighting,
   updateWord,
 } from "../application/index.js";
+import { DEFAULT_MODEL } from "../infra/ai/ApiAiProvider.js";
+import { mapAiError } from "../infra/ai/errors.js";
+import { testAiConnection } from "../infra/ai/testConnection.js";
 import {
   captureDeps,
   examComprehensionDeps,
@@ -265,7 +269,7 @@ export async function defineWordAction(
       examples: def.examples,
     };
   } catch (error) {
-    return { error: `Falha ao gerar definição: ${errorMessage(error)}` };
+    return { error: `Falha ao gerar definição: ${mapAiError(error)}` };
   }
 }
 
@@ -394,10 +398,39 @@ export async function autoCorrectAction(
       new Date(),
     );
   } catch (error) {
-    return { error: `Falha ao chamar a IA: ${errorMessage(error)}` };
+    return { error: `Falha ao chamar a IA: ${mapAiError(error)}` };
   }
   if (!result.ok) return { error: result.error };
 
   revalidatePath(`/exams/${examId}`);
   return { ok: true, message: "Corrigido automaticamente via API." };
+}
+
+// ── Settings: AI connection test ────────────────────────────────────────────
+
+/**
+ * Cheap "test connection" for the Settings screen. Falls back to the stored
+ * (or env) config for whichever field the user left blank, so the button
+ * works both for a freshly typed key/model and for confirming what's already
+ * saved.
+ */
+export async function testAiConnectionAction(
+  formData: FormData,
+): Promise<FormState> {
+  const formApiKey = field(formData, "apiKey");
+  const formModel = field(formData, "model");
+
+  const effective = await getEffectiveAiConfig(repos.settings, {
+    apiKey: process.env.ANTHROPIC_API_KEY,
+    model: process.env.ANTHROPIC_MODEL,
+  });
+
+  const apiKey = formApiKey || effective.apiKey;
+  if (!apiKey) return { error: "Nenhuma chave de API para testar." };
+
+  const model = formModel || effective.model || DEFAULT_MODEL;
+
+  const result = await testAiConnection({ apiKey, model });
+  if (!result.ok) return { error: result.error };
+  return { ok: true, message: "Conexão OK — a chave e o modelo funcionam." };
 }
