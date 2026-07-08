@@ -7,3 +7,4 @@ export * from "./define/wordDefinition.js";
 export * from "./model.js";
 export * from "./ports/repositories.js";
 export * from "./ports/ai.js";
+export * from "./settings/settings.js";
