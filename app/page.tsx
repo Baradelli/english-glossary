@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { getDashboardMetrics } from "../src/application/index.js";
+import { getDashboardMetrics, getSettingsView } from "../src/application/index.js";
 import { repos } from "../src/server/container.js";
 import { cardClass } from "../src/ui/controls.js";
+import { OnboardingTour } from "../src/ui/OnboardingTour.js";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,7 @@ export default async function DashboardPage(): Promise<ReactNode> {
     },
     new Date(),
   );
+  const settings = await getSettingsView(repos.settings);
 
   return (
     <div className="space-y-8">
@@ -42,47 +44,50 @@ export default async function DashboardPage(): Promise<ReactNode> {
         <a
           href="/api/backup"
           download
+          data-tour="backup"
           className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50"
         >
           Exportar backup (JSON)
         </a>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3">
-        <Link href="/glossary">
-          <Stat
-            label="Palavras"
-            value={m.words.total}
-            hint={`${m.words.nova} novas · ${m.words.aprendendo} aprendendo · ${m.words.dominada} dominadas`}
-          />
-        </Link>
-        <Link href="/sources">
-          <Stat label="Fontes" value={m.sources} hint="vídeos, livros…" />
-        </Link>
-        <Link href="/review">
-          <Stat
-            label="Revisões (7 dias)"
-            value={m.reviewsLast7Days}
-            hint="palavras avaliadas"
-          />
-        </Link>
-      </section>
-
-      <section className="grid gap-4 sm:grid-cols-3">
-        <div className="sm:col-span-3">
-          <Link href="/exams">
+      <div data-tour="dashboard-stats" className="space-y-4">
+        <section className="grid gap-4 sm:grid-cols-3">
+          <Link href="/glossary">
             <Stat
-              label="Provas"
-              value={m.exams.total}
-              hint={
-                m.exams.corrected > 0
-                  ? `${m.exams.corrected} corrigidas · média ${m.exams.averageScore}/100`
-                  : "nenhuma corrigida ainda"
-              }
+              label="Palavras"
+              value={m.words.total}
+              hint={`${m.words.nova} novas · ${m.words.aprendendo} aprendendo · ${m.words.dominada} dominadas`}
             />
           </Link>
-        </div>
-      </section>
+          <Link href="/sources">
+            <Stat label="Fontes" value={m.sources} hint="vídeos, livros…" />
+          </Link>
+          <Link href="/review">
+            <Stat
+              label="Revisões (7 dias)"
+              value={m.reviewsLast7Days}
+              hint="palavras avaliadas"
+            />
+          </Link>
+        </section>
+
+        <section className="grid gap-4 sm:grid-cols-3">
+          <div className="sm:col-span-3">
+            <Link href="/exams">
+              <Stat
+                label="Provas"
+                value={m.exams.total}
+                hint={
+                  m.exams.corrected > 0
+                    ? `${m.exams.corrected} corrigidas · média ${m.exams.averageScore}/100`
+                    : "nenhuma corrigida ainda"
+                }
+              />
+            </Link>
+          </div>
+        </section>
+      </div>
 
       <section className="grid gap-4 sm:grid-cols-2">
         <Link
@@ -104,6 +109,8 @@ export default async function DashboardPage(): Promise<ReactNode> {
           </p>
         </Link>
       </section>
+
+      <OnboardingTour autoStart={settings.onboardingSeenAt === null} />
     </div>
   );
 }

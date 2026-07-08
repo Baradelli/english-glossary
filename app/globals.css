@@ -1,3 +1,57 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Onboarding tour (driver.js) popover — styled to match the app's cards.
+   Light-only for now; dark mode for this component is Fase 4's job. */
+.driver-popover.eg-tour {
+  @apply max-w-sm rounded-lg border border-slate-200 bg-white p-5 shadow-lg;
+}
+
+.eg-tour .driver-popover-title {
+  @apply text-base font-semibold text-slate-900;
+}
+
+.eg-tour .driver-popover-description {
+  @apply mt-1 text-sm text-slate-600;
+}
+
+.eg-tour .driver-popover-progress-text {
+  @apply text-xs text-slate-500;
+}
+
+.eg-tour .driver-popover-footer-btn {
+  @apply rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700;
+}
+
+.eg-tour .driver-popover-footer-btn:hover,
+.eg-tour .driver-popover-footer-btn:focus {
+  @apply bg-slate-50;
+}
+
+.eg-tour .driver-popover-next-btn {
+  @apply border-blue-600 bg-blue-600 text-white;
+}
+
+.eg-tour .driver-popover-next-btn:hover,
+.eg-tour .driver-popover-next-btn:focus {
+  @apply border-blue-700 bg-blue-700;
+}
+
+.eg-tour .driver-popover-close-btn {
+  @apply text-slate-400;
+}
+
+.eg-tour .driver-popover-close-btn:hover,
+.eg-tour .driver-popover-close-btn:focus {
+  @apply text-slate-700;
+}
+
+.eg-tour .eg-tour-skip-btn {
+  @apply mr-auto border-transparent bg-transparent text-slate-500;
+}
+
+.eg-tour .eg-tour-skip-btn:hover,
+.eg-tour .eg-tour-skip-btn:focus {
+  @apply bg-transparent text-slate-700 underline;
+}

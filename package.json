@@ -27,6 +27,7 @@
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-alert-dialog": "^1.1.17",
     "clsx": "^2.1.1",
+    "driver.js": "^1.6.0",
     "next": "^15.5.19",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

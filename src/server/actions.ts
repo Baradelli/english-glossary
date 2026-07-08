@@ -25,6 +25,8 @@ import {
   generateVocabularyExam,
   generateWeeklyReviewExam,
   getEffectiveAiConfig,
+  markOnboardingSeen,
+  resetOnboarding,
   reviewWordById,
   saveAiSettings,
   submitExamAnswers,
@@ -494,4 +496,23 @@ export async function restoreBackupAction(
 
   revalidatePath("/", "layout");
   return { ok: true, message: "Backup restaurado." };
+}
+
+// ── Onboarding: driver.js tour on the dashboard ─────────────────────────────
+
+/**
+ * Marks the onboarding tour as seen. Silent by design — called from every
+ * tour exit path (Concluir, Pular, "x"), so there is no toast to show.
+ */
+export async function markOnboardingSeenAction(): Promise<FormState> {
+  await markOnboardingSeen(repos.settings);
+  revalidatePath("/");
+  return { ok: true };
+}
+
+/** "Rever tour de boas-vindas" in Configurações: clears the seen flag and sends the user back to the Painel, where it auto-starts. */
+export async function resetOnboardingAction(): Promise<FormState> {
+  await resetOnboarding(repos.settings);
+  revalidatePath("/");
+  return { ok: true, redirectTo: "/" };
 }

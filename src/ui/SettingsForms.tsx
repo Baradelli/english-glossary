@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { useRef, useState, type ReactNode } from "react";
 import { z } from "zod";
 import {
+  resetOnboardingAction,
   restoreBackupAction,
   saveAiSettingsAction,
   testAiConnectionAction,
@@ -295,6 +296,39 @@ export function SettingsBackupSection(): ReactNode {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+    </div>
+  );
+}
+
+/**
+ * "Rever tour de boas-vindas": clears the onboardingSeenAt flag and sends the
+ * user to the Painel, where {@link OnboardingTour} reads the fresh flag
+ * (server-rendered, no client flash) and auto-starts.
+ */
+export function SettingsOnboardingSection(): ReactNode {
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+
+  async function onReplayTour(): Promise<void> {
+    setPending(true);
+    const result = await resetOnboardingAction();
+    setPending(false);
+    if (notify(result) && result?.redirectTo) router.push(result.redirectTo);
+  }
+
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={onReplayTour}
+        disabled={pending}
+        className={secondaryButtonClass}
+      >
+        {pending ? "Preparando…" : "Rever tour de boas-vindas"}
+      </button>
+      <p className="text-sm text-slate-500">
+        O tour roda de novo na próxima visita ao Painel.
+      </p>
     </div>
   );
 }

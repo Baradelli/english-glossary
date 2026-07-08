@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getEffectiveAiConfig,
   getSettingsView,
+  markOnboardingSeen,
   resetOnboarding,
   saveAiSettings,
   saveTheme,
@@ -201,5 +202,24 @@ describe("resetOnboarding", () => {
     const repo = fakeSettingsRepository();
     await expect(resetOnboarding(repo)).resolves.toBeUndefined();
     expect(await repo.get(SETTING_KEYS.onboardingSeenAt)).toBeNull();
+  });
+});
+
+describe("markOnboardingSeen", () => {
+  it("stores a valid ISO timestamp", async () => {
+    const repo = fakeSettingsRepository();
+    await markOnboardingSeen(repo);
+    const stored = await repo.get(SETTING_KEYS.onboardingSeenAt);
+    expect(stored).not.toBeNull();
+    expect(new Date(stored!).toISOString()).toBe(stored);
+  });
+
+  it("overwrites a previously stored timestamp", async () => {
+    const repo = fakeSettingsRepository({
+      [SETTING_KEYS.onboardingSeenAt]: "2020-01-01T00:00:00.000Z",
+    });
+    await markOnboardingSeen(repo);
+    const stored = await repo.get(SETTING_KEYS.onboardingSeenAt);
+    expect(stored).not.toBe("2020-01-01T00:00:00.000Z");
   });
 });

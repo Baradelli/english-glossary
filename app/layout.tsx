@@ -23,16 +23,32 @@ export default function RootLayout({
             <Link href="/" className="font-semibold">
               English Glossary
             </Link>
-            <Link href="/glossary" className="text-sm text-slate-600 hover:text-slate-900">
+            <Link
+              href="/glossary"
+              data-tour="nav-glossary"
+              className="text-sm text-slate-600 hover:text-slate-900"
+            >
               Glossário
             </Link>
-            <Link href="/sources" className="text-sm text-slate-600 hover:text-slate-900">
+            <Link
+              href="/sources"
+              data-tour="nav-sources"
+              className="text-sm text-slate-600 hover:text-slate-900"
+            >
               Fontes
             </Link>
-            <Link href="/review" className="text-sm text-slate-600 hover:text-slate-900">
+            <Link
+              href="/review"
+              data-tour="nav-review"
+              className="text-sm text-slate-600 hover:text-slate-900"
+            >
               Revisão
             </Link>
-            <Link href="/exams" className="text-sm text-slate-600 hover:text-slate-900">
+            <Link
+              href="/exams"
+              data-tour="nav-exams"
+              className="text-sm text-slate-600 hover:text-slate-900"
+            >
               Provas
             </Link>
             <Link

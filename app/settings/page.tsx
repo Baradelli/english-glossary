@@ -4,7 +4,11 @@ import { getSettingsView } from "../../src/application/index.js";
 import { DEFAULT_MODEL } from "../../src/infra/ai/ApiAiProvider.js";
 import { repos } from "../../src/server/container.js";
 import { cardClass } from "../../src/ui/controls.js";
-import { SettingsAiForm, SettingsBackupSection } from "../../src/ui/SettingsForms.js";
+import {
+  SettingsAiForm,
+  SettingsBackupSection,
+  SettingsOnboardingSection,
+} from "../../src/ui/SettingsForms.js";
 
 export const dynamic = "force-dynamic";
 
@@ -61,9 +65,9 @@ export default async function SettingsPage(): Promise<ReactNode> {
 
       <section className={cardClass}>
         <h2 className="text-lg font-semibold">Onboarding</h2>
-        <p className="mt-2 text-sm text-slate-500">
-          O tour de boas-vindas chega em uma próxima atualização.
-        </p>
+        <div className="mt-4">
+          <SettingsOnboardingSection />
+        </div>
       </section>
     </div>
   );

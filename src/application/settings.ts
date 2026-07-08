@@ -105,3 +105,8 @@ export async function saveTheme(
 export async function resetOnboarding(repo: SettingsRepository): Promise<void> {
   await repo.delete(SETTING_KEYS.onboardingSeenAt);
 }
+
+/** Records that the user has seen (or dismissed) the onboarding tour. */
+export async function markOnboardingSeen(repo: SettingsRepository): Promise<void> {
+  await repo.set(SETTING_KEYS.onboardingSeenAt, new Date().toISOString());
+}
