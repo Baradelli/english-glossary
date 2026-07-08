@@ -317,20 +317,32 @@ export async function replaceAll(
   }
   const backup = parsed.data;
 
-  await prisma.$transaction(
-    async (tx) => {
-      // FK-reverse wipe (children before parents); Setting is excluded.
-      await tx.examWord.deleteMany();
-      await tx.exam.deleteMany();
-      await tx.reviewLog.deleteMany();
-      await tx.wordSighting.deleteMany();
-      await tx.word.deleteMany();
-      await tx.source.deleteMany();
-      await tx.sourceType.deleteMany();
-      await insertAll(tx, backup);
-    },
-    { timeout: 60_000 },
-  );
+  try {
+    await prisma.$transaction(
+      async (tx) => {
+        // FK-reverse wipe (children before parents); Setting is excluded.
+        await tx.examWord.deleteMany();
+        await tx.exam.deleteMany();
+        await tx.reviewLog.deleteMany();
+        await tx.wordSighting.deleteMany();
+        await tx.word.deleteMany();
+        await tx.source.deleteMany();
+        await tx.sourceType.deleteMany();
+        await insertAll(tx, backup);
+      },
+      { timeout: 60_000 },
+    );
+  } catch {
+    // The file passed schema validation but is referentially broken (e.g. a
+    // sighting/word pointing at an id absent from the payload) — SQLite's
+    // foreign_keys pragma throws mid-transaction, which rolls everything
+    // back. No data was lost; report it the same friendly way as a schema
+    // failure instead of letting the throw escape as a generic server error.
+    return {
+      ok: false,
+      error: "Não foi possível restaurar o backup — nenhum dado foi alterado.",
+    };
+  }
 
   return { ok: true };
 }

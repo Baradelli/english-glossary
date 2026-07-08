@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { getTestPrisma, resetDb } from "../../../test/helpers/db.js";
-import { exportAll, importAll, replaceAll, BackupSchema } from "./backup.js";
+import {
+  exportAll,
+  importAll,
+  replaceAll,
+  BackupSchema,
+  type Backup,
+} from "./backup.js";
 import { PrismaExamRepository } from "../prisma/PrismaExamRepository.js";
 import { PrismaSourceRepository } from "../prisma/PrismaSourceRepository.js";
 import { PrismaSourceTypeRepository } from "../prisma/PrismaSourceTypeRepository.js";
@@ -258,5 +264,63 @@ describe("backup — replaceAll (restore = wipe + import, transactional)", () =>
       where: { key: "ai.apiKey" },
     });
     expect(setting?.value).toBe("secret");
+  });
+
+  it("returns a friendly error and rolls back when the backup is referentially broken", async () => {
+    await seed();
+    const wordsBefore = await prisma.word.count();
+    const sightingsBefore = await prisma.wordSighting.count();
+    const sourcesBefore = await prisma.source.count();
+    const examsBefore = await prisma.exam.count();
+    expect(wordsBefore).toBeGreaterThan(0);
+
+    // Schema-valid (passes BackupSchema) but referentially broken: the
+    // sighting points at a word that doesn't exist anywhere in the payload.
+    // SQLite has foreign_keys enabled, so the insert throws mid-transaction.
+    const broken: Backup = {
+      version: 2,
+      sourceTypes: [{ id: "st1", name: "Vídeo", createdAt: NOW.toISOString() }],
+      sources: [
+        {
+          id: "src1",
+          name: "Fireship",
+          url: null,
+          sourceTypeId: "st1",
+          createdAt: NOW.toISOString(),
+        },
+      ],
+      words: [],
+      wordSightings: [
+        {
+          id: "sight1",
+          wordId: "does-not-exist",
+          sourceId: "src1",
+          seenAt: NOW.toISOString(),
+          contextSentence: null,
+          isFirstEncounter: true,
+          definitionEn: null,
+          definitionPt: null,
+          examples: [],
+        },
+      ],
+      reviewLogs: [],
+      exams: [],
+      examWords: [],
+    };
+    expect(BackupSchema.safeParse(broken).success).toBe(true);
+
+    const result = await replaceAll(prisma, broken);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe(
+        "Não foi possível restaurar o backup — nenhum dado foi alterado.",
+      );
+    }
+
+    // Rollback: prior data (across the whole schema) is untouched.
+    expect(await prisma.word.count()).toBe(wordsBefore);
+    expect(await prisma.wordSighting.count()).toBe(sightingsBefore);
+    expect(await prisma.source.count()).toBe(sourcesBefore);
+    expect(await prisma.exam.count()).toBe(examsBefore);
   });
 });
