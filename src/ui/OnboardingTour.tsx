@@ -132,6 +132,7 @@ export function OnboardingTour({ autoStart }: { autoStart: boolean }): null {
       prevBtnText: "Anterior",
       doneBtnText: "Concluir",
       allowClose: true,
+      disableActiveInteraction: true,
       overlayOpacity: 0.6,
       stagePadding: 6,
       stageRadius: 8,
