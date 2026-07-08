@@ -1,6 +1,8 @@
 node_modules/
 coverage/
 dist/
+dist-electron/
+release/
 
 # Next.js
 .next/
