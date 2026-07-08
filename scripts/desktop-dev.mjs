@@ -87,4 +87,6 @@ async function main() {
   });
 }
 
-main();
+main().catch((err) => {
+  fail(err?.stack ?? String(err));
+});
