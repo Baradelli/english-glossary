@@ -26,6 +26,7 @@ import {
   generateWeeklyReviewExam,
   getEffectiveAiConfig,
   reviewWordById,
+  saveAiSettings,
   submitExamAnswers,
   submitExamCorrection,
   updateSighting,
@@ -406,6 +407,29 @@ export async function autoCorrectAction(
 
   revalidatePath(`/exams/${examId}`);
   return { ok: true, message: "Corrigido automaticamente via API." };
+}
+
+// ── Settings: save AI settings ──────────────────────────────────────────────
+
+/**
+ * Saves the AI key/model form. REGRA CRÍTICA (contrato da Task 2): when
+ * `clearKey` is set, `apiKey` is forced to "" before reaching {@link
+ * saveAiSettings} — that use case validates the whole input before branching,
+ * so a stray non-empty apiKey alongside clearKey would otherwise fail
+ * validation (or, worse, be silently ignored) instead of clearing the key.
+ */
+export async function saveAiSettingsAction(
+  formData: FormData,
+): Promise<FormState> {
+  const clearKey = field(formData, "clearKey") === "true";
+  const apiKey = clearKey ? "" : field(formData, "apiKey");
+  const model = field(formData, "model");
+
+  const result = await saveAiSettings(repos.settings, { apiKey, model, clearKey });
+  if (!result.ok) return { error: result.error };
+
+  revalidatePath("/", "layout");
+  return { ok: true, message: "Configurações de IA salvas." };
 }
 
 // ── Settings: AI connection test ────────────────────────────────────────────

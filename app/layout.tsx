@@ -35,6 +35,13 @@ export default function RootLayout({
             <Link href="/exams" className="text-sm text-slate-600 hover:text-slate-900">
               Provas
             </Link>
+            <Link
+              href="/settings"
+              data-tour="nav-settings"
+              className="ml-auto text-sm text-slate-600 hover:text-slate-900"
+            >
+              Configurações
+            </Link>
           </nav>
         </header>
         <main className="mx-auto max-w-4xl px-6 py-10">{children}</main>
