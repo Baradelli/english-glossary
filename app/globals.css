@@ -13,8 +13,7 @@ html.dark {
   color-scheme: dark;
 }
 
-/* Onboarding tour (driver.js) popover — styled to match the app's cards.
-   Light-only for now; dark mode for this component is Fase 4's job. */
+/* Onboarding tour (driver.js) popover — styled to match the app's cards. */
 .driver-popover.eg-tour {
   @apply max-w-sm rounded-lg border border-slate-200 bg-white p-5 shadow-lg;
 }
@@ -65,4 +64,85 @@ html.dark {
 .eg-tour .eg-tour-skip-btn:hover,
 .eg-tour .eg-tour-skip-btn:focus {
   @apply bg-transparent text-slate-700 underline;
+}
+
+/* Dark-mode overrides for the tour popover (Task 17). Driver.js ships no
+   theming hooks of its own, so every piece — including the arrow, which is
+   a bordered 0x0 box whose visible side is a plain border-color — is
+   restyled by hand here, scoped under `.dark`. */
+.dark .driver-popover.eg-tour {
+  @apply border-slate-700 bg-slate-900 text-slate-100;
+}
+
+.dark .eg-tour .driver-popover-title {
+  @apply text-slate-100;
+}
+
+.dark .eg-tour .driver-popover-description {
+  @apply text-slate-300;
+}
+
+.dark .eg-tour .driver-popover-progress-text {
+  @apply text-slate-400;
+}
+
+.dark .eg-tour .driver-popover-footer-btn {
+  @apply border-slate-700 bg-slate-900 text-slate-300;
+}
+
+.dark .eg-tour .driver-popover-footer-btn:hover,
+.dark .eg-tour .driver-popover-footer-btn:focus {
+  @apply bg-slate-800;
+}
+
+/* Primary ("Próximo"/"Concluir") stays blue in dark mode too — reasserted
+   here because `.driver-popover-footer-btn`'s dark rule above has higher
+   specificity (three classes vs. two) and would otherwise win the cascade
+   for the border/background this button shares with the secondary ones. */
+.dark .eg-tour .driver-popover-next-btn {
+  @apply border-blue-600 bg-blue-600 text-white;
+}
+
+.dark .eg-tour .driver-popover-next-btn:hover,
+.dark .eg-tour .driver-popover-next-btn:focus {
+  @apply border-blue-700 bg-blue-700;
+}
+
+.dark .eg-tour .driver-popover-close-btn {
+  @apply text-slate-500;
+}
+
+.dark .eg-tour .driver-popover-close-btn:hover,
+.dark .eg-tour .driver-popover-close-btn:focus {
+  @apply text-slate-300;
+}
+
+.dark .eg-tour .eg-tour-skip-btn {
+  @apply text-slate-400;
+}
+
+.dark .eg-tour .eg-tour-skip-btn:hover,
+.dark .eg-tour .eg-tour-skip-btn:focus {
+  @apply text-slate-300;
+}
+
+/* driver.css paints the arrow via `border: 5px solid #fff` on the base
+   class, then zeroes out three of the four border-*-color sides per
+   direction class, leaving the visible side at the popover's bg color. Each
+   rule below only touches the one longhand color that direction leaves
+   alone, so it layers on top without fighting driver.css's transparency. */
+.dark .eg-tour .driver-popover-arrow-side-left {
+  border-left-color: theme("colors.slate.900");
+}
+
+.dark .eg-tour .driver-popover-arrow-side-right {
+  border-right-color: theme("colors.slate.900");
+}
+
+.dark .eg-tour .driver-popover-arrow-side-top {
+  border-top-color: theme("colors.slate.900");
+}
+
+.dark .eg-tour .driver-popover-arrow-side-bottom {
+  border-bottom-color: theme("colors.slate.900");
 }

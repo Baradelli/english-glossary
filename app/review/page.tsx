@@ -13,17 +13,17 @@ export default async function ReviewPage(): Promise<ReactNode> {
     <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-bold">Revisão</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           {queue.length} {queue.length === 1 ? "palavra" : "palavras"} para hoje.
         </p>
       </header>
 
       {queue.length === 0 ? (
-        <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
-          <p className="text-slate-600">Nada para revisar agora. 🎉</p>
+        <div className="rounded-lg border border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
+          <p className="text-slate-600 dark:text-slate-400">Nada para revisar agora. 🎉</p>
           <Link
             href="/glossary"
-            className="mt-2 inline-block text-sm text-blue-600 hover:underline"
+            className="mt-2 inline-block text-sm text-blue-600 hover:underline dark:text-blue-400"
           >
             Ver o glossário
           </Link>

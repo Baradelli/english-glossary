@@ -15,10 +15,10 @@ export const dynamic = "force-dynamic";
 
 function WordList({ words }: { words: SourceWordView[] }): ReactNode {
   if (words.length === 0) {
-    return <p className="text-sm text-slate-500">Nenhuma.</p>;
+    return <p className="text-sm text-slate-500 dark:text-slate-400">Nenhuma.</p>;
   }
   return (
-    <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
+    <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
       {words.map((entry) => (
         <li key={entry.sightingId} className="px-4 py-3">
           <span className="inline-flex items-center gap-2">
@@ -30,15 +30,15 @@ function WordList({ words }: { words: SourceWordView[] }): ReactNode {
             </Link>
             <KindBadge kind={entry.word.kind} />
           </span>
-          <span className="text-slate-500"> — {entry.word.definitionPt}</span>
+          <span className="text-slate-500 dark:text-slate-400"> — {entry.word.definitionPt}</span>
           {entry.contextSentence ? (
-            <p className="mt-1 text-sm italic text-slate-600">
+            <p className="mt-1 text-sm italic text-slate-600 dark:text-slate-400">
               “{entry.contextSentence}”
             </p>
           ) : null}
           <Link
             href={`/sightings/${entry.sightingId}`}
-            className="mt-1 inline-block text-xs font-medium text-blue-600 hover:underline"
+            className="mt-1 inline-block text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
           >
             Editar significado nesta fonte
           </Link>
@@ -63,21 +63,21 @@ export default async function SourcePage({
   return (
     <div className="space-y-8">
       <section>
-        <p className="text-sm font-medium text-slate-500">
+        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
           {sourceType?.name ?? "—"}
         </p>
         <h1 className="text-2xl font-bold">{source.name}</h1>
         {source.url ? (
           <a
             href={source.url}
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-blue-600 hover:underline dark:text-blue-400"
             target="_blank"
             rel="noreferrer"
           >
             {source.url}
           </a>
         ) : null}
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
           {totalWords} {totalWords === 1 ? "encontro" : "encontros"} ·{" "}
           {newWords.length} novas · {reencounters.length} reencontros
         </p>
@@ -85,7 +85,7 @@ export default async function SourcePage({
 
       <section className={cardClass}>
         <h2 className="font-semibold">Capturar nesta fonte</h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           A fonte é o contexto ativo: adicione várias palavras ou expressões
           seguidas sem recolar a identificação.
         </p>
@@ -96,13 +96,13 @@ export default async function SourcePage({
 
       <section className="grid gap-6 sm:grid-cols-2">
         <div>
-          <h2 className="mb-2 text-sm font-semibold text-slate-700">
+          <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
             Palavras novas ({newWords.length})
           </h2>
           <WordList words={newWords} />
         </div>
         <div>
-          <h2 className="mb-2 text-sm font-semibold text-slate-700">
+          <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
             Reencontros ({reencounters.length})
           </h2>
           <WordList words={reencounters} />
@@ -111,7 +111,7 @@ export default async function SourcePage({
 
       <section className={cardClass}>
         <h2 className="font-semibold">Prova de compreensão</h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Gere a prova de compreensão desta fonte (Template 3). Cole uma
           transcrição/resumo para ancorar as perguntas no conteúdo real.
         </p>
@@ -120,8 +120,8 @@ export default async function SourcePage({
         </div>
       </section>
 
-      <section className="flex items-center justify-between border-t border-slate-200 pt-6">
-        <Link href="/sources" className="text-sm text-blue-600 hover:underline">
+      <section className="flex items-center justify-between border-t border-slate-200 pt-6 dark:border-slate-800">
+        <Link href="/sources" className="text-sm text-blue-600 hover:underline dark:text-blue-400">
           ← Voltar às fontes
         </Link>
         <DeleteSourceButton sourceId={source.id} />

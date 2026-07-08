@@ -46,13 +46,13 @@ export function ReviewCard({ word }: { word: ReviewWordVM }): ReactNode {
       {revealed ? (
         <div className="mt-2 space-y-1 text-sm">
           <p>
-            <span className="text-slate-500">EN:</span> {word.definitionEn}
+            <span className="text-slate-500 dark:text-slate-400">EN:</span> {word.definitionEn}
           </p>
           <p>
-            <span className="text-slate-500">PT:</span> {word.definitionPt}
+            <span className="text-slate-500 dark:text-slate-400">PT:</span> {word.definitionPt}
           </p>
           {word.examples.map((example, i) => (
-            <p key={i} className="italic text-slate-600">
+            <p key={i} className="italic text-slate-600 dark:text-slate-400">
               “{example}”
             </p>
           ))}
@@ -61,7 +61,7 @@ export function ReviewCard({ word }: { word: ReviewWordVM }): ReactNode {
         <button
           type="button"
           onClick={() => setRevealed(true)}
-          className="mt-2 text-sm font-medium text-blue-600 hover:underline"
+          className="mt-2 text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
         >
           Mostrar resposta
         </button>

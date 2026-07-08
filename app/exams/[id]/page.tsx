@@ -56,7 +56,7 @@ export default async function ExamPage({
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-sm font-medium text-slate-500">
+        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
           {typeLabel[exam.type]} · {exam.status}
         </p>
         <h1 className="text-2xl font-bold">Prova</h1>
@@ -73,7 +73,7 @@ export default async function ExamPage({
           {apiEnabled ? (
             <section className={cardClass}>
               <h2 className="font-semibold">Atalho — corrigir via API</h2>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Modo API ativo: pule os passos manuais e deixe a IA corrigir.
               </p>
               <div className="mt-4">
@@ -101,28 +101,34 @@ export default async function ExamPage({
             <h2 className="font-semibold">Resultado</h2>
             <span className="text-2xl font-bold">{exam.resultJson.score}/100</span>
           </div>
-          <ul className="mt-4 divide-y divide-slate-100">
+          <ul className="mt-4 divide-y divide-slate-100 dark:divide-slate-800">
             {exam.resultJson.items.map((item, i) => (
               <li key={i} className="flex items-start gap-3 py-2">
-                <span className={item.correct ? "text-emerald-600" : "text-red-600"}>
+                <span
+                  className={
+                    item.correct
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-red-600 dark:text-red-400"
+                  }
+                >
                   {item.correct ? "✓" : "✗"}
                 </span>
                 <span>
                   <span className="font-medium">{item.term}</span>
                   {item.note ? (
-                    <span className="text-slate-500"> — {item.note}</span>
+                    <span className="text-slate-500 dark:text-slate-400"> — {item.note}</span>
                   ) : null}
                 </span>
               </li>
             ))}
           </ul>
-          <p className="mt-4 rounded-md bg-slate-50 p-3 text-sm text-slate-700">
+          <p className="mt-4 rounded-md bg-slate-50 p-3 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-300">
             {exam.resultJson.feedback}
           </p>
         </section>
       ) : null}
 
-      <Link href="/exams" className="text-sm text-blue-600 hover:underline">
+      <Link href="/exams" className="text-sm text-blue-600 hover:underline dark:text-blue-400">
         ← Voltar às provas
       </Link>
     </div>

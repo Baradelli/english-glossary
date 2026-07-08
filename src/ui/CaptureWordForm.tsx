@@ -39,7 +39,8 @@ const KIND_OPTIONS = [
 ] as const;
 
 const helperButtonClass =
-  "rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60";
+  "rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 " +
+  "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800";
 
 /**
  * Batch-capture form for a source page (React Hook Form + Zod). Values are held
@@ -125,7 +126,7 @@ export function CaptureWordForm({
       <div
         role="radiogroup"
         aria-label="Tipo de entrada"
-        className="inline-flex gap-0.5 rounded-lg border border-slate-200 bg-slate-100 p-0.5"
+        className="inline-flex gap-0.5 rounded-lg border border-slate-200 bg-slate-100 p-0.5 dark:border-slate-800 dark:bg-slate-800"
       >
         {KIND_OPTIONS.map((opt) => {
           const selected = kind === opt.value;
@@ -139,8 +140,8 @@ export function CaptureWordForm({
               className={
                 "rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors " +
                 (selected
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-800")
+                  ? "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100"
+                  : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100")
               }
             >
               {opt.label}
@@ -160,7 +161,7 @@ export function CaptureWordForm({
           {...register("term")}
         />
         <FieldError message={errors.term?.message} />
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           {isExpr
             ? "A expressão idiomática completa, como se diz em inglês."
             : "Se já existir, registramos um reencontro. Formas flexionadas são entradas distintas (ex.: “ramble” e “rambling”)."}
@@ -176,14 +177,14 @@ export function CaptureWordForm({
           className={inputClass}
           {...register("contextSentence")}
         />
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           A frase real onde você encontrou {isExpr ? "a expressão" : "a palavra"}.
           É usada para gerar a definição no contexto certo.
         </p>
       </div>
 
-      <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-        <p className="text-xs font-medium text-slate-600">
+      <div className="rounded-md border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800">
+        <p className="text-xs font-medium text-slate-600 dark:text-slate-400">
           Não sabe a definição? Gere a partir {isExpr ? "da expressão" : "da palavra"} e
           do contexto:
         </p>

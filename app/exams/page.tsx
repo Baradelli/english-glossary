@@ -14,9 +14,9 @@ const typeLabel: Record<ExamType, string> = {
 };
 
 const statusStyle: Record<ExamStatus, string> = {
-  gerada: "bg-sky-100 text-sky-800",
-  respondida: "bg-amber-100 text-amber-800",
-  corrigida: "bg-emerald-100 text-emerald-800",
+  gerada: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300",
+  respondida: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
+  corrigida: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
 };
 
 export default async function ExamsPage(): Promise<ReactNode> {
@@ -28,7 +28,7 @@ export default async function ExamsPage(): Promise<ReactNode> {
 
       <section className={cardClass}>
         <h2 className="font-semibold">Gerar prova</h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           A prova de compreensão de uma fonte é gerada pela página da fonte.
         </p>
         <div className="mt-4">
@@ -37,17 +37,17 @@ export default async function ExamsPage(): Promise<ReactNode> {
       </section>
 
       <section>
-        <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
+        <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
           {exams.map((exam) => (
             <li key={exam.id}>
               <Link
                 href={`/exams/${exam.id}`}
-                className="flex items-center justify-between px-4 py-3 hover:bg-slate-50"
+                className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800"
               >
                 <span className="font-medium">{typeLabel[exam.type]}</span>
                 <span className="flex items-center gap-3">
                   {exam.score !== null ? (
-                    <span className="text-sm text-slate-500">{exam.score}/100</span>
+                    <span className="text-sm text-slate-500 dark:text-slate-400">{exam.score}/100</span>
                   ) : null}
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyle[exam.status]}`}
@@ -59,7 +59,7 @@ export default async function ExamsPage(): Promise<ReactNode> {
             </li>
           ))}
           {exams.length === 0 ? (
-            <li className="px-4 py-6 text-center text-sm text-slate-500">
+            <li className="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
               Nenhuma prova ainda.
             </li>
           ) : null}

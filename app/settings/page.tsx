@@ -48,9 +48,9 @@ export default async function SettingsPage(): Promise<ReactNode> {
 
       <section className={cardClass}>
         <h2 className="text-lg font-semibold">Backup e restauração</h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
           Banco de dados:{" "}
-          <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">{dbPath}</code>
+          <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs dark:bg-slate-800">{dbPath}</code>
         </p>
         <div className="mt-4">
           <SettingsBackupSection />
@@ -61,7 +61,7 @@ export default async function SettingsPage(): Promise<ReactNode> {
         <h2 className="text-lg font-semibold">Aparência</h2>
         <div className="mt-4">
           <ThemeToggle initialTheme={view.theme} />
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
             &quot;Sistema&quot; acompanha o tema do Windows.
           </p>
         </div>

@@ -124,7 +124,7 @@ export function NewSourceForm({ types }: { types: SourceType[] }): ReactNode {
         </select>
         <FieldError message={errors.sourceTypeId?.message} />
         {types.length === 0 ? (
-          <p className="mt-1 text-xs text-amber-700">
+          <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
             Cadastre um tipo primeiro (na página de fontes).
           </p>
         ) : null}

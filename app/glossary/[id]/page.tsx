@@ -34,22 +34,22 @@ export default async function WordPage({
           </div>
           <Link
             href={`/glossary/${word.id}/edit`}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-50"
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
           >
             Editar
           </Link>
         </div>
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <dt className="text-sm font-medium text-slate-500">Definição (EN)</dt>
+            <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Definição (EN)</dt>
             <dd>{word.definitionEn}</dd>
           </div>
           <div>
-            <dt className="text-sm font-medium text-slate-500">Definição (PT)</dt>
+            <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Definição (PT)</dt>
             <dd>{word.definitionPt}</dd>
           </div>
         </dl>
-        <p className="mt-3 text-sm text-slate-500">
+        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
           Próxima revisão: {day(word.nextReview)} · repetições {word.repetitions}{" "}
           · intervalo {word.intervalDays}d · facilidade{" "}
           {word.easeFactor.toFixed(2)}
@@ -58,7 +58,7 @@ export default async function WordPage({
 
       {word.examples.length > 0 ? (
         <section>
-          <h2 className="text-sm font-medium text-slate-500">
+          <h2 className="text-sm font-medium text-slate-500 dark:text-slate-400">
             Exemplos autorais
           </h2>
           <ul className="mt-2 list-inside list-disc space-y-1">
@@ -70,10 +70,10 @@ export default async function WordPage({
       ) : null}
 
       <section>
-        <h2 className="text-sm font-medium text-slate-500">
+        <h2 className="text-sm font-medium text-slate-500 dark:text-slate-400">
           Fontes onde apareceu ({sightings.length})
         </h2>
-        <ul className="mt-2 divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
+        <ul className="mt-2 divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
           {sightings.map((sighting, i) => (
             <li key={i} className="px-4 py-3">
               <div className="flex items-center justify-between">
@@ -83,19 +83,19 @@ export default async function WordPage({
                 >
                   {sighting.sourceName}
                 </Link>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-slate-500 dark:text-slate-400">
                   {sighting.isFirstEncounter ? "primeiro encontro" : "reencontro"}{" "}
                   · {day(sighting.seenAt)}
                 </span>
               </div>
               {sighting.contextSentence ? (
-                <p className="mt-1 text-sm italic text-slate-600">
+                <p className="mt-1 text-sm italic text-slate-600 dark:text-slate-400">
                   “{sighting.contextSentence}”
                 </p>
               ) : null}
               <Link
                 href={`/sightings/${sighting.sightingId}`}
-                className="mt-1 inline-block text-xs font-medium text-blue-600 hover:underline"
+                className="mt-1 inline-block text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
               >
                 Editar significado nesta fonte
                 {sighting.hasOwnDefinition ? " (personalizado)" : ""}
@@ -105,7 +105,7 @@ export default async function WordPage({
         </ul>
       </section>
 
-      <Link href="/glossary" className="text-sm text-blue-600 hover:underline">
+      <Link href="/glossary" className="text-sm text-blue-600 hover:underline dark:text-blue-400">
         ← Voltar ao glossário
       </Link>
     </div>

@@ -22,9 +22,9 @@ export default async function EditWordPage({
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <p className="text-sm font-medium text-slate-500">Editar palavra</p>
+        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Editar palavra</p>
         <h1 className="text-2xl font-bold">{word.term}</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           A definição geral da palavra. Significados específicos de cada fonte
           são editados na página de cada encontro.
         </p>
@@ -43,7 +43,7 @@ export default async function EditWordPage({
 
       <Link
         href={`/glossary/${word.id}`}
-        className="text-sm text-blue-600 hover:underline"
+        className="text-sm text-blue-600 hover:underline dark:text-blue-400"
       >
         ← Voltar à palavra
       </Link>

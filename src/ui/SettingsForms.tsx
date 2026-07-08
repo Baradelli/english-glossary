@@ -63,10 +63,12 @@ function initialModelSelect(model: string | null): string {
 }
 
 const secondaryButtonClass =
-  "inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 " +
+  "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800";
 
 const dangerButtonClass =
-  "inline-flex items-center rounded-md border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex items-center rounded-md border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 " +
+  "dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950";
 
 /**
  * AI key/model settings form. The key's value never lives on the server
@@ -164,19 +166,19 @@ export function SettingsAiForm({
             type="button"
             onClick={() => setShowKey((v) => !v)}
             aria-label={showKey ? "Ocultar chave" : "Mostrar chave"}
-            className="absolute inset-y-0 right-2 text-xs font-medium text-slate-500 hover:text-slate-700"
+            className="absolute inset-y-0 right-2 text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
           >
             {showKey ? "Ocultar" : "Mostrar"}
           </button>
         </div>
         <FieldError message={errors.apiKey?.message} />
         {hasApiKey ? (
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             Deixe em branco para manter a chave atual.
           </p>
         ) : null}
         {envKeyPresent && !hasApiKey ? (
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             Uma chave do arquivo .env está ativa como fallback.
           </p>
         ) : null}
@@ -269,7 +271,7 @@ export function SettingsBackupSection(): ReactNode {
           type="file"
           accept="application/json"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          className="block text-sm text-slate-600"
+          className="block text-sm text-slate-600 dark:text-slate-400"
         />
         <AlertDialog>
           <AlertDialogTrigger disabled={!file || restoring} className={secondaryButtonClass}>
@@ -326,7 +328,7 @@ export function SettingsOnboardingSection(): ReactNode {
       >
         {pending ? "Preparando…" : "Rever tour de boas-vindas"}
       </button>
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-slate-500 dark:text-slate-400">
         O tour roda de novo na próxima visita ao Painel.
       </p>
     </div>

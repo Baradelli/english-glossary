@@ -25,7 +25,7 @@ export function CopyBlock({ text }: { text: string }): ReactNode {
       >
         {copied ? "Copiado!" : "Copiar"}
       </button>
-      <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-4 pr-20 text-sm">
+      <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-4 pr-20 text-sm dark:border-slate-800 dark:bg-slate-800">
         {text}
       </pre>
     </div>

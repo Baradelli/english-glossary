@@ -14,7 +14,7 @@ export default async function NewSourcePage(): Promise<ReactNode> {
       <div className={cardClass}>
         <NewSourceForm types={types} />
       </div>
-      <Link href="/sources" className="text-sm text-blue-600 hover:underline">
+      <Link href="/sources" className="text-sm text-blue-600 hover:underline dark:text-blue-400">
         ← Voltar às fontes
       </Link>
     </div>

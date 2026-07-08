@@ -36,7 +36,7 @@ export default async function SourcesPage({
         <nav className="flex flex-wrap gap-2 text-sm">
           <Link
             href="/sources"
-            className={`rounded-full px-3 py-1 ${type ? "bg-slate-100" : "bg-blue-100 text-blue-800"}`}
+            className={`rounded-full px-3 py-1 ${type ? "bg-slate-100 dark:bg-slate-800" : "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"}`}
           >
             Todas
           </Link>
@@ -44,7 +44,7 @@ export default async function SourcesPage({
             <Link
               key={t.id}
               href={`/sources?type=${t.id}`}
-              className={`rounded-full px-3 py-1 ${type === t.id ? "bg-blue-100 text-blue-800" : "bg-slate-100"}`}
+              className={`rounded-full px-3 py-1 ${type === t.id ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300" : "bg-slate-100 dark:bg-slate-800"}`}
             >
               {t.name}
             </Link>
@@ -53,22 +53,22 @@ export default async function SourcesPage({
       ) : null}
 
       <section>
-        <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
+        <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
           {sources.map((source) => (
             <li key={source.id}>
               <Link
                 href={`/sources/${source.id}`}
-                className="flex items-center justify-between px-4 py-3 hover:bg-slate-50"
+                className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800"
               >
                 <span className="font-medium">{source.name}</span>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-slate-500 dark:text-slate-400">
                   {typeName(source.sourceTypeId)}
                 </span>
               </Link>
             </li>
           ))}
           {sources.length === 0 ? (
-            <li className="px-4 py-6 text-center text-sm text-slate-500">
+            <li className="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
               Nenhuma fonte ainda.
             </li>
           ) : null}
@@ -76,10 +76,10 @@ export default async function SourcesPage({
       </section>
 
       <section className={cardClass}>
-        <h2 className="text-sm font-semibold text-slate-700">
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
           Tipos de fonte ({types.length})
         </h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           {types.map((t) => t.name).join(", ") || "Nenhum tipo cadastrado."}
         </p>
         <div className="mt-4">

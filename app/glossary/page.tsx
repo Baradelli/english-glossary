@@ -57,7 +57,7 @@ export default async function GlossaryPage({
           match ? (
             <Link
               href={`/glossary/${match.word.id}`}
-              className="mt-4 flex items-center justify-between rounded-md border border-green-200 bg-green-50 px-4 py-3 hover:border-green-400"
+              className="mt-4 flex items-center justify-between rounded-md border border-green-200 bg-green-50 px-4 py-3 hover:border-green-400 dark:border-green-900 dark:bg-green-950 dark:hover:border-green-700"
             >
               <span>
                 <span className="font-semibold">{match.word.term}</span>{" "}
@@ -69,7 +69,7 @@ export default async function GlossaryPage({
               </span>
             </Link>
           ) : (
-            <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+            <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm dark:border-amber-900 dark:bg-amber-950">
               “{term}” não está no glossário. Cadastre-a a partir da{" "}
               <Link href="/sources" className="font-medium underline">
                 página de uma fonte
@@ -82,10 +82,10 @@ export default async function GlossaryPage({
 
       <section>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-sm font-medium text-slate-500">
+          <h2 className="text-sm font-medium text-slate-500 dark:text-slate-400">
             {words.length} {words.length === 1 ? noun : nounPlural}
           </h2>
-          <div className="inline-flex gap-0.5 rounded-lg border border-slate-200 bg-slate-100 p-0.5">
+          <div className="inline-flex gap-0.5 rounded-lg border border-slate-200 bg-slate-100 p-0.5 dark:border-slate-800 dark:bg-slate-800">
             {KIND_FILTERS.map((f) => {
               const active = (kindFilter ?? "") === f.value;
               const params = new URLSearchParams();
@@ -102,8 +102,8 @@ export default async function GlossaryPage({
                   className={
                     "rounded-md px-3 py-1 text-sm font-medium transition-colors " +
                     (active
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800")
+                      ? "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100"
+                      : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100")
                   }
                 >
                   {f.label}
@@ -112,23 +112,23 @@ export default async function GlossaryPage({
             })}
           </div>
         </div>
-        <ul className="mt-3 divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
+        <ul className="mt-3 divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
           {words.map((word) => (
             <li key={word.id}>
               <Link
                 href={`/glossary/${word.id}`}
-                className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-50"
+                className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800"
               >
                 <span>
                   <span className="font-medium">{word.term}</span>
-                  <span className="text-slate-500"> — {word.definitionPt}</span>
+                  <span className="text-slate-500 dark:text-slate-400"> — {word.definitionPt}</span>
                 </span>
                 <KindBadge kind={word.kind} />
               </Link>
             </li>
           ))}
           {words.length === 0 ? (
-            <li className="px-4 py-6 text-center text-sm text-slate-500">
+            <li className="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
               {kindFilter === "expressao"
                 ? "Nenhuma expressão ainda."
                 : "Nenhuma palavra ainda."}

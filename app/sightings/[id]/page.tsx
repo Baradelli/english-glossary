@@ -22,7 +22,7 @@ export default async function SightingPage({
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <p className="text-sm font-medium text-slate-500">
+        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
           {word ? (
             <Link href={`/glossary/${word.id}`} className="hover:underline">
               {word.term}
@@ -40,7 +40,7 @@ export default async function SightingPage({
           )}
         </p>
         <h1 className="text-2xl font-bold">Significado nesta fonte</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Os campos começam com a definição existente — edite-a para o sentido e
           os exemplos desta fonte. A definição geral da palavra não é alterada.
         </p>
@@ -64,7 +64,7 @@ export default async function SightingPage({
       {word ? (
         <Link
           href={`/glossary/${word.id}`}
-          className="text-sm text-blue-600 hover:underline"
+          className="text-sm text-blue-600 hover:underline dark:text-blue-400"
         >
           ← Voltar à palavra
         </Link>

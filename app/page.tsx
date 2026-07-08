@@ -18,9 +18,9 @@ function Stat({
 }): ReactNode {
   return (
     <div className={cardClass}>
-      <p className="text-sm font-medium text-slate-500">{label}</p>
+      <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
       <p className="mt-1 text-3xl font-bold">{value}</p>
-      {hint ? <p className="text-sm text-slate-500">{hint}</p> : null}
+      {hint ? <p className="text-sm text-slate-500 dark:text-slate-400">{hint}</p> : null}
     </div>
   );
 }
@@ -45,7 +45,7 @@ export default async function DashboardPage(): Promise<ReactNode> {
           href="/api/backup"
           download
           data-tour="backup"
-          className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50"
+          className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
         >
           Exportar backup (JSON)
         </a>
@@ -92,19 +92,19 @@ export default async function DashboardPage(): Promise<ReactNode> {
       <section className="grid gap-4 sm:grid-cols-2">
         <Link
           href="/glossary"
-          className="rounded-lg border border-slate-200 bg-white p-5 hover:border-blue-300"
+          className="rounded-lg border border-slate-200 bg-white p-5 hover:border-blue-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-700"
         >
           <p className="font-semibold">Buscar / capturar vocabulário</p>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             Comece pela fonte que você está consumindo.
           </p>
         </Link>
         <Link
           href="/review"
-          className="rounded-lg border border-slate-200 bg-white p-5 hover:border-blue-300"
+          className="rounded-lg border border-slate-200 bg-white p-5 hover:border-blue-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-700"
         >
           <p className="font-semibold">Revisar agora</p>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             {m.reviewsLast7Days >= 0 ? "Veja a fila de hoje." : ""}
           </p>
         </Link>
