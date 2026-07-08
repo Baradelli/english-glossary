@@ -335,7 +335,7 @@ function startAutoUpdater(): void {
   // Never checkForUpdatesAndNotify(): that also raises the OS-native
   // notification, which would duplicate our own dialog below.
   autoUpdater.on("update-downloaded", (info) => {
-    if (!win || win.isDestroyed()) return;
+    if (!win || win.isDestroyed() || quitting) return;
     void dialog
       .showMessageBox(win, {
         type: "info",
@@ -353,6 +353,9 @@ function startAutoUpdater(): void {
         // app.quit(), which runs our existing before-quit → killChild path
         // before the installer replaces the files.
         if (response === 0) autoUpdater.quitAndInstall();
+      })
+      .catch((err) => {
+        console.error("[updater] dialog error:", err);
       });
   });
 
