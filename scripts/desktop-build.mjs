@@ -39,6 +39,7 @@ const standaloneDir = path.join(rootDir, ".next", "standalone");
 const distElectronDir = path.join(rootDir, "dist-electron");
 
 const PREVIEW = process.argv.includes("--preview");
+const BUNDLE_ONLY = process.argv.includes("--bundle-only");
 
 function log(stage, message) {
   console.log(`[desktop-build:${stage}] ${message}`);
@@ -232,6 +233,13 @@ function stagePreview() {
 // ---------------------------------------------------------------------------
 
 async function main() {
+  if (BUNDLE_ONLY) {
+    // Task 11's desktop:dev launcher: only the main process needs rebuilding
+    // against a live `next dev` server, so skip `next build`/prepare entirely.
+    await stageBundleMain();
+    log("done", "bundle-only build finished. main at dist-electron/main.cjs");
+    return;
+  }
   stageBuild();
   stagePrepare();
   await stageBundleMain();
