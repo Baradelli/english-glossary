@@ -34,6 +34,8 @@ import {
 import { DEFAULT_MODEL } from "../infra/ai/ApiAiProvider.js";
 import { mapAiError } from "../infra/ai/errors.js";
 import { testAiConnection } from "../infra/ai/testConnection.js";
+import { replaceAll } from "../infra/backup/backup.js";
+import { prisma } from "../infra/prisma/client.js";
 import {
   captureDeps,
   examComprehensionDeps,
@@ -433,4 +435,39 @@ export async function testAiConnectionAction(
   const result = await testAiConnection({ apiKey, model });
   if (!result.ok) return { error: result.error };
   return { ok: true, message: "Conexão OK — a chave e o modelo funcionam." };
+}
+
+// ── Settings: restore backup (replace all study data) ───────────────────────
+
+const MAX_BACKUP_BYTES = 50 * 1024 * 1024;
+
+/**
+ * Restores an uploaded JSON backup, REPLACING all study data. Validation
+ * happens before any wipe (inside {@link replaceAll}), so a bad file leaves the
+ * database intact. On success every route is revalidated. The `Setting` table
+ * (API key, etc.) is not part of the backup and survives the restore.
+ */
+export async function restoreBackupAction(
+  formData: FormData,
+): Promise<FormState> {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "Selecione um arquivo de backup." };
+  }
+  if (file.size > MAX_BACKUP_BYTES) {
+    return { error: "Arquivo muito grande (máx. 50 MB)." };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(await file.text());
+  } catch {
+    return { error: "O arquivo não é um JSON válido." };
+  }
+
+  const result = await replaceAll(prisma, parsed);
+  if (!result.ok) return { error: result.error };
+
+  revalidatePath("/", "layout");
+  return { ok: true, message: "Backup restaurado." };
 }

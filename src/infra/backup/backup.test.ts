@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { getTestPrisma, resetDb } from "../../../test/helpers/db.js";
-import { exportAll, importAll, BackupSchema } from "./backup.js";
+import { exportAll, importAll, replaceAll, BackupSchema } from "./backup.js";
 import { PrismaExamRepository } from "../prisma/PrismaExamRepository.js";
 import { PrismaSourceRepository } from "../prisma/PrismaSourceRepository.js";
 import { PrismaSourceTypeRepository } from "../prisma/PrismaSourceTypeRepository.js";
@@ -36,6 +36,16 @@ async function seed(): Promise<void> {
     definitionEn: "lengthy and confused",
     definitionPt: "prolixo",
     examples: [],
+    nextReview: NOW,
+  });
+  // A fixed expression (kind: "expressao") — must survive an export→restore
+  // round trip without being demoted to "palavra" (the v1 backup bug).
+  await words.create({
+    term: "break the ice",
+    kind: "expressao",
+    definitionEn: "to initiate conversation in a social setting",
+    definitionPt: "quebrar o gelo",
+    examples: ["A joke can break the ice."],
     nextReview: NOW,
   });
   const sighting = await sightings.record({
@@ -90,7 +100,7 @@ beforeEach(resetDb);
 describe("backup — exportAll", () => {
   it("dumps an empty database as empty arrays with a version", async () => {
     const dump = await exportAll(prisma);
-    expect(dump.version).toBe(1);
+    expect(dump.version).toBe(2);
     expect(dump.words).toEqual([]);
     expect(dump.exams).toEqual([]);
   });
@@ -150,5 +160,103 @@ describe("backup — importAll validation", () => {
       examWords: [],
     };
     expect(BackupSchema.safeParse(empty).success).toBe(true);
+  });
+});
+
+describe("backup — v1 compatibility (import defaults kind)", () => {
+  it("imports a v1 payload (no kind) with words defaulting to 'palavra'", async () => {
+    const v1 = {
+      version: 1,
+      sourceTypes: [],
+      sources: [],
+      words: [
+        {
+          id: "w1",
+          term: "hello",
+          definitionEn: "a greeting",
+          definitionPt: "olá",
+          examples: [],
+          easeFactor: 2.5,
+          intervalDays: 0,
+          repetitions: 0,
+          nextReview: NOW.toISOString(),
+          createdAt: NOW.toISOString(),
+        },
+      ],
+      wordSightings: [],
+      reviewLogs: [],
+      exams: [],
+      examWords: [],
+    };
+    await importAll(prisma, v1);
+    const stored = await prisma.word.findUnique({ where: { id: "w1" } });
+    expect(stored?.kind).toBe("palavra");
+    // And the re-export tags the whole file as v2 going forward.
+    expect((await exportAll(prisma)).version).toBe(2);
+  });
+});
+
+describe("backup — replaceAll (restore = wipe + import, transactional)", () => {
+  it("round trips v2, preserving kind, and wipes prior data", async () => {
+    await seed();
+    const before = await exportAll(prisma);
+    expect(before.version).toBe(2);
+    expect(before.words.some((w) => w.kind === "expressao")).toBe(true);
+
+    // Simulate writing to a file and reading it back.
+    const onDisk: unknown = JSON.parse(JSON.stringify(before));
+
+    // Mutate the live DB: a stray word that must NOT survive the restore.
+    await words.create({
+      term: "stray",
+      definitionEn: "should be wiped",
+      definitionPt: "deve sumir",
+      examples: [],
+      nextReview: NOW,
+    });
+    expect(await prisma.word.count()).toBe(before.words.length + 1);
+
+    const result = await replaceAll(prisma, onDisk);
+    expect(result.ok).toBe(true);
+
+    const after = await exportAll(prisma);
+    expect(after).toEqual(before);
+    expect(after.words.find((w) => w.term === "break the ice")?.kind).toBe(
+      "expressao",
+    );
+    expect(after.words.some((w) => w.term === "stray")).toBe(false);
+  });
+
+  it("rejects an invalid payload without deleting anything", async () => {
+    await seed();
+    const wordsBefore = await prisma.word.count();
+    const sightingsBefore = await prisma.wordSighting.count();
+    const examsBefore = await prisma.exam.count();
+    expect(wordsBefore).toBeGreaterThan(0);
+
+    const result = await replaceAll(prisma, { version: 2 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("Arquivo de backup inválido:");
+    }
+
+    // Nothing was wiped.
+    expect(await prisma.word.count()).toBe(wordsBefore);
+    expect(await prisma.wordSighting.count()).toBe(sightingsBefore);
+    expect(await prisma.exam.count()).toBe(examsBefore);
+  });
+
+  it("leaves the Setting table untouched (out of backup and out of wipe)", async () => {
+    await seed();
+    await prisma.setting.create({ data: { key: "ai.apiKey", value: "secret" } });
+
+    const onDisk: unknown = JSON.parse(JSON.stringify(await exportAll(prisma)));
+    const result = await replaceAll(prisma, onDisk);
+    expect(result.ok).toBe(true);
+
+    const setting = await prisma.setting.findUnique({
+      where: { key: "ai.apiKey" },
+    });
+    expect(setting?.value).toBe("secret");
   });
 });
