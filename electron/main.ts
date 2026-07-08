@@ -16,6 +16,7 @@
 
 import { app, BrowserWindow, dialog, shell, utilityProcess } from "electron";
 import type { UtilityProcess } from "electron";
+import { autoUpdater } from "electron-updater";
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
@@ -119,7 +120,15 @@ function onReady(port: number): void {
   const url = `http://127.0.0.1:${port}/`;
   // This exact line is what the smoke test greps for.
   console.log(`[main] app ready at http://127.0.0.1:${port}`);
-  if (win && !win.isDestroyed()) void win.loadURL(url);
+  if (win && !win.isDestroyed()) {
+    // Auto-update only ever starts once the real app has actually loaded —
+    // never before/during boot. See startAutoUpdater() for the packaged-only
+    // guard and the offline-first error handling.
+    void win
+      .loadURL(url)
+      .then(() => startAutoUpdater())
+      .catch((err) => console.error(`[main] loadURL failed: ${err}`));
+  }
 }
 
 function onFailure(reason: string): void {
@@ -297,6 +306,73 @@ async function boot(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Auto-update (Task 13)
+//
+// Offline-first: this app must be fully usable with no network at all. Every
+// updater failure — no connection, GitHub unreachable, a 404 because no
+// release has been published yet — is logged with a `[updater]` prefix and
+// otherwise INVISIBLE to the user. No dialog, no boot delay, no interruption.
+// The only user-facing surface is the "update-downloaded" dialog, and only
+// once a release is actually staged and ready to install.
+//
+// Only runs once: app.isPackaged (never in `desktop:dev`/`desktop:preview`,
+// which run unpackaged), AND only after boot() has forked the server and the
+// window has successfully loaded it (called from onReady()'s loadURL
+// continuation — see above). The GLOSSARY_DEV_URL branch in boot() returns
+// before onReady is ever reached, so this never runs there either.
+// ---------------------------------------------------------------------------
+
+let autoUpdaterStarted = false;
+
+function startAutoUpdater(): void {
+  if (!app.isPackaged) return;
+  if (autoUpdaterStarted) return;
+  autoUpdaterStarted = true;
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  // Never checkForUpdatesAndNotify(): that also raises the OS-native
+  // notification, which would duplicate our own dialog below.
+  autoUpdater.on("update-downloaded", (info) => {
+    if (!win || win.isDestroyed()) return;
+    void dialog
+      .showMessageBox(win, {
+        type: "info",
+        title: "English Glossary",
+        message: `Nova versão ${info.version} baixada.`,
+        detail: "Reinicie para aplicar a atualização.",
+        buttons: ["Reiniciar agora", "Ao fechar"],
+        defaultId: 0,
+        cancelId: 1,
+        noLink: true,
+      })
+      .then(({ response }) => {
+        // "Ao fechar": do nothing — autoInstallOnAppQuit installs it when the
+        // app quits normally. "Reiniciar agora": quitAndInstall() triggers
+        // app.quit(), which runs our existing before-quit → killChild path
+        // before the installer replaces the files.
+        if (response === 0) autoUpdater.quitAndInstall();
+      });
+  });
+
+  autoUpdater.on("error", (err) => {
+    // Offline-first, non-negotiable: no dialog, ever. Log only.
+    console.error(`[updater] ${err instanceof Error ? err.message : String(err)}`);
+  });
+
+  console.log("[updater] checking for updates…");
+  autoUpdater.checkForUpdates().catch((err: unknown) => {
+    // checkForUpdates() also rejects on failure in addition to emitting
+    // "error" above — catch it too so a network failure never becomes an
+    // unhandled promise rejection.
+    console.error(
+      `[updater] checkForUpdates failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  });
+}
+
+// ---------------------------------------------------------------------------
 // App lifecycle
 // ---------------------------------------------------------------------------
 
@@ -334,5 +410,3 @@ if (!app.requestSingleInstanceLock()) {
   });
   app.on("will-quit", killChild);
 }
-
-// auto-update wiring chega na Task 13

@@ -40,6 +40,7 @@ const distElectronDir = path.join(rootDir, "dist-electron");
 
 const PREVIEW = process.argv.includes("--preview");
 const BUNDLE_ONLY = process.argv.includes("--bundle-only");
+const PUBLISH = process.argv.includes("--publish");
 
 function log(stage, message) {
   console.log(`[desktop-build:${stage}] ${message}`);
@@ -234,22 +235,45 @@ function stagePreview() {
 // reads electron-builder.yml at the repo root: it packs dist-electron + the
 // standalone/migrations (via extraResources) into resources/, wraps it in an
 // asar, and emits `release/English Glossary Setup <version>.exe` (NSIS).
-// `--publish never` keeps this a purely local build (GitHub publish is Task 13).
+// `--publish never` keeps this a purely local build. `--publish` (Task 13)
+// switches to `--publish always`, which additionally uploads the exe +
+// latest.yml + blockmap to a draft GitHub release (electron-builder.yml's
+// `publish:` block points at Baradelli/english-glossary) — this is what
+// `npm run desktop:publish` uses, and it requires GH_TOKEN (checked before we
+// spend minutes building — see requireGhToken()).
 // The first run downloads the NSIS toolchain, so give it a generous timeout.
 // ---------------------------------------------------------------------------
+function requireGhToken() {
+  if (!process.env.GH_TOKEN) {
+    // Exact wording/format required by the spec — not routed through fail()
+    // (which prefixes "[desktop-build:<stage>] ERROR:") so scripts/CI can
+    // match on this literal message.
+    console.error(
+      "[desktop-build] GH_TOKEN ausente. Exporte um token com escopo repo para publicar.",
+    );
+    process.exit(1);
+  }
+}
+
 function stagePackage() {
   return new Promise((resolve) => {
-    log("package", "running electron-builder (--win --publish never)…");
+    const publishMode = PUBLISH ? "always" : "never";
+    log("package", `running electron-builder (--win --publish ${publishMode})…`);
     const child = spawn(
       "npx",
-      ["electron-builder", "--win", "--publish", "never"],
+      ["electron-builder", "--win", "--publish", publishMode],
       { cwd: rootDir, stdio: "inherit", shell: true },
     );
     child.on("exit", (code) => {
       if (code !== 0) {
         fail("package", `electron-builder exited with code ${code ?? "null"}`);
       }
-      log("package", "installer built under release/.");
+      log(
+        "package",
+        PUBLISH
+          ? "installer built and published as a draft GitHub release."
+          : "installer built under release/.",
+      );
       resolve();
     });
   });
@@ -263,6 +287,9 @@ async function main() {
     log("done", "bundle-only build finished. main at dist-electron/main.cjs");
     return;
   }
+  // Fail fast, before spending minutes on `next build`/electron-builder, if
+  // this is a publish run with no token to authenticate the GitHub upload.
+  if (PUBLISH) requireGhToken();
   stageBuild();
   stagePrepare();
   await stageBundleMain();
@@ -270,7 +297,12 @@ async function main() {
     stagePreview();
   } else {
     await stagePackage();
-    log("done", "desktop build finished. installer at release/");
+    log(
+      "done",
+      PUBLISH
+        ? "desktop build finished. draft release published on GitHub."
+        : "desktop build finished. installer at release/",
+    );
   }
 }
 

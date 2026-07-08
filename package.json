@@ -11,6 +11,7 @@
     "start": "node scripts/next-with-port.mjs start",
     "desktop:build": "node scripts/desktop-build.mjs",
     "desktop:preview": "node scripts/desktop-build.mjs --preview",
+    "desktop:publish": "node scripts/desktop-build.mjs --publish",
     "desktop:dev": "node scripts/desktop-dev.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
