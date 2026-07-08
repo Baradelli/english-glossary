@@ -19,10 +19,11 @@
 //
 // Run: node scripts/desktop-build.mjs  (npm run desktop:build)
 
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import {
   cpSync,
   existsSync,
+  mkdirSync,
   readdirSync,
   readFileSync,
   rmSync,
@@ -30,9 +31,14 @@ import {
 } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { build as esbuild } from "esbuild";
+import electronPath from "electron";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const standaloneDir = path.join(rootDir, ".next", "standalone");
+const distElectronDir = path.join(rootDir, "dist-electron");
+
+const PREVIEW = process.argv.includes("--preview");
 
 function log(stage, message) {
   console.log(`[desktop-build:${stage}] ${message}`);
@@ -167,11 +173,75 @@ function stagePrepare() {
 }
 
 // ---------------------------------------------------------------------------
-// stage: bundle main (Task 10) — esbuild the Electron main process (CJS).
+// stage: bundle main (Task 10) — esbuild the Electron main process to CJS.
+//
+// electron/main.ts is authored as ESM but Electron loads the main entry as
+// CommonJS (package.json "main": "dist-electron/main.cjs"). esbuild bundles it
+// to a single .cjs, marking `electron` external (Electron provides it at
+// runtime) and leaving Node builtins external via platform=node. We also copy
+// the static splash next to the bundle; main.ts resolves it relative to
+// __dirname (= dist-electron/).
+// ---------------------------------------------------------------------------
+async function stageBundleMain() {
+  log("bundle", "bundling electron/main.ts → dist-electron/main.cjs…");
+  mkdirSync(distElectronDir, { recursive: true });
+  await esbuild({
+    entryPoints: [path.join(rootDir, "electron", "main.ts")],
+    outfile: path.join(distElectronDir, "main.cjs"),
+    bundle: true,
+    platform: "node",
+    format: "cjs",
+    target: "node20",
+    external: ["electron"],
+    logLevel: "info",
+  });
+  log("bundle", "bundled main.cjs.");
+
+  const splashSrc = path.join(rootDir, "electron", "splash.html");
+  if (!existsSync(splashSrc)) {
+    fail("bundle", `electron/splash.html not found at ${splashSrc}`);
+  }
+  cpSync(splashSrc, path.join(distElectronDir, "splash.html"));
+  log("bundle", "copied electron/splash.html → dist-electron/splash.html");
+}
+
+// ---------------------------------------------------------------------------
+// stage: preview (Task 10) — launch the built app with Electron.
+// Runs the real main process against the built standalone; does NOT invoke
+// electron-builder (that is Task 12). Env (e.g. GLOSSARY_DB_PATH) is inherited.
+// ---------------------------------------------------------------------------
+function stagePreview() {
+  log("preview", "launching Electron (electron .)…");
+  // `electronPath` is the absolute path to Electron's binary (the electron
+  // package exports it when imported from plain Node), so we spawn it directly
+  // — no shell, no .cmd shim, no arg-escaping deprecation warning.
+  const child = spawn(electronPath, ["."], {
+    cwd: rootDir,
+    stdio: "inherit",
+    env: process.env,
+  });
+  child.on("exit", (code) => {
+    log("preview", `Electron exited with code ${code ?? "null"}.`);
+    process.exit(code ?? 0);
+  });
+}
+
+// ---------------------------------------------------------------------------
 // stage: package (Task 12) — electron-builder → NSIS installer.
 // (Structure left in place; not implemented in this task.)
 // ---------------------------------------------------------------------------
 
-stageBuild();
-stagePrepare();
-log("done", "desktop build finished. standalone at .next/standalone");
+async function main() {
+  stageBuild();
+  stagePrepare();
+  await stageBundleMain();
+  if (PREVIEW) {
+    stagePreview();
+  } else {
+    log("done", "desktop build finished. standalone at .next/standalone");
+  }
+}
+
+main().catch((err) => {
+  fail("main", err?.stack ?? String(err));
+});
