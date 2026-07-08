@@ -58,6 +58,11 @@ let readyTimer: NodeJS.Timeout | null = null;
 // not race it: onFailure owns the quit in that state.
 let handlingFailure = false;
 
+// Set as soon as the app is intentionally quitting (before-quit /
+// window-all-closed). Killing the child then makes it exit non-zero/null,
+// which must NOT be mistaken for a startup failure — see onFailure/exit guard.
+let quitting = false;
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -114,11 +119,12 @@ function onReady(port: number): void {
   const url = `http://127.0.0.1:${port}/`;
   // This exact line is what the smoke test greps for.
   console.log(`[main] app ready at http://127.0.0.1:${port}`);
-  void win?.loadURL(url);
+  if (win && !win.isDestroyed()) void win.loadURL(url);
 }
 
 function onFailure(reason: string): void {
   if (settled) return;
+  if (quitting) return;
   settled = true;
   handlingFailure = true;
   if (readyTimer) clearTimeout(readyTimer);
@@ -249,7 +255,7 @@ function startServer(port: number): void {
   child.on("exit", (code) => {
     console.log(`[server] process exited with code ${code}`);
     child = null;
-    if (!settled && code !== 0) {
+    if (!settled && !quitting && code !== 0) {
       onFailure(`server exited with code ${code}`);
     }
   });
@@ -312,12 +318,20 @@ if (!app.requestSingleInstanceLock()) {
   app.on("window-all-closed", () => {
     // While the failure dialog is showing, onFailure owns the quit — don't
     // race it here (the splash may already be gone behind the dialog).
-    if (!handlingFailure) app.quit();
+    if (!handlingFailure) {
+      quitting = true;
+      app.quit();
+    }
   });
 
   // Kill the forked server on every exit path (quit, window close, dialog
-  // close) so no orphan Node process survives the app.
-  app.on("before-quit", killChild);
+  // close) so no orphan Node process survives the app. Mark quitting first so
+  // the child's resulting non-zero/null exit isn't mistaken for a startup
+  // failure (see onFailure / the exit handler's guard).
+  app.on("before-quit", () => {
+    quitting = true;
+    killChild();
+  });
   app.on("will-quit", killChild);
 }
 
