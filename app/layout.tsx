@@ -31,7 +31,7 @@ export default async function RootLayout({
   const { theme } = await getSettingsView(repos.settings);
 
   return (
-    <html lang="pt-BR" className={theme === "dark" ? "dark" : undefined} data-theme={theme}>
+    <html lang="pt-BR" suppressHydrationWarning className={theme === "dark" ? "dark" : undefined} data-theme={theme}>
       <body className="min-h-screen bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
         <script dangerouslySetInnerHTML={{ __html: ANTI_FOUC_SCRIPT }} />
         <header className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
