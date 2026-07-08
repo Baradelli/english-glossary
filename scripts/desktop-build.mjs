@@ -229,8 +229,31 @@ function stagePreview() {
 
 // ---------------------------------------------------------------------------
 // stage: package (Task 12) — electron-builder → NSIS installer.
-// (Structure left in place; not implemented in this task.)
+//
+// Only runs in the full flow (no --preview / --bundle-only). electron-builder
+// reads electron-builder.yml at the repo root: it packs dist-electron + the
+// standalone/migrations (via extraResources) into resources/, wraps it in an
+// asar, and emits `release/English Glossary Setup <version>.exe` (NSIS).
+// `--publish never` keeps this a purely local build (GitHub publish is Task 13).
+// The first run downloads the NSIS toolchain, so give it a generous timeout.
 // ---------------------------------------------------------------------------
+function stagePackage() {
+  return new Promise((resolve) => {
+    log("package", "running electron-builder (--win --publish never)…");
+    const child = spawn(
+      "npx",
+      ["electron-builder", "--win", "--publish", "never"],
+      { cwd: rootDir, stdio: "inherit", shell: true },
+    );
+    child.on("exit", (code) => {
+      if (code !== 0) {
+        fail("package", `electron-builder exited with code ${code ?? "null"}`);
+      }
+      log("package", "installer built under release/.");
+      resolve();
+    });
+  });
+}
 
 async function main() {
   if (BUNDLE_ONLY) {
@@ -246,7 +269,8 @@ async function main() {
   if (PREVIEW) {
     stagePreview();
   } else {
-    log("done", "desktop build finished. standalone at .next/standalone");
+    await stagePackage();
+    log("done", "desktop build finished. installer at release/");
   }
 }
 

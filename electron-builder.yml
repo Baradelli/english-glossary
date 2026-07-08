@@ -1,0 +1,33 @@
+appId: br.com.marcosbaradelli.english-glossary
+productName: English Glossary
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist-electron/**
+  - package.json
+  - "!node_modules"
+extraResources:
+  - from: .next/standalone
+    to: app
+  # electron-builder hard-drops the ROOT node_modules of any copied dir
+  # (app-builder-lib/util/filter.js: `if (relative === "node_modules") return false`),
+  # and no `filter` glob can override it. The standalone server + migrate.cjs resolve
+  # @prisma/client / next / .prisma from .next/standalone/node_modules, so we copy that
+  # tree back in via a companion entry whose `from` root is node_modules itself — none
+  # of its children match the literal "node_modules" filter, so they all survive.
+  - from: .next/standalone/node_modules
+    to: app/node_modules
+  - from: prisma/migrations
+    to: migrations
+asar: true
+win:
+  target: nsis
+nsis:
+  oneClick: true
+  perMachine: false
+  deleteAppDataOnUninstall: false
+publish:
+  provider: github
+  owner: Baradelli
+  repo: english-glossary
