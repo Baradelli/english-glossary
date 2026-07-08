@@ -32,7 +32,10 @@ O app resolve isso sendo o repositório central do vocabulário aprendido (com d
 
 - **Sem multiusuário e sem autenticação** — single-user local; isso elimina toda uma categoria de complexidade (sessões, RBAC, isolamento de dados).
 - **Sem integração automática com a API do YouTube (ou qualquer fonte)** — a fonte é registrada por nome (e URL opcional) manualmente; nada de OAuth nem download de legendas.
-- **Sem app mobile / sem PWA offline** — uso no navegador desktop.
+- **Sem app mobile / sem PWA offline** — o uso via navegador (`next dev`)
+  segue suportado em desenvolvimento, mas a distribuição ao usuário final
+  passou a ser via app desktop nativo para Windows (Electron), não navegador
+  (ver ADR-006).
 - **Sem geração de áudio/pronúncia, sem OCR, sem captura automática de palavras** — a captura é manual e intencional (faz parte do método).
 - **API de IA não é o caminho padrão** — fica como adapter plugável opcional, não como dependência de v1.
 
@@ -229,6 +232,14 @@ Em todos: a instrução final é idêntica — _"responda ESTRITAMENTE neste for
 - **Fator decisivo:** a sobreposição estrutural é ~90%; uma entidade separada duplicaria toda a pilha hexagonal por um objeto quase idêntico, e ainda quebraria a revisão/provas unificadas.
 - **Decisão:** **A.** `kind String @default("palavra")` no `Word` — coluna aditiva (não-destrutiva: respeita "nunca resetar o dev.db"). Palavras e expressões dividem a mesma fila de revisão e as mesmas provas; diferem só no prompt de definição (idiomático para expressões) e em rótulos/filtros de UI.
 - **Consequências:** custo mínimo (uma coluna + alguns condicionais). Se um dia expressões divergirem muito (campos próprios, cadência diferente), o `Word` fica mais "gordo" — aí valeria reabrir esta decisão e extrair a entidade.
+
+### ADR-006: Distribuição como app desktop Electron (vs. uso só via navegador)
+
+- **Contexto:** o app era pensado para rodar via `next dev`/`next start` no navegador. Um usuário leigo (não-dev) — incluindo um recrutador que queira testar — não deveria precisar instalar Node, clonar o repositório e rodar comandos de terminal só para abrir o app.
+- **Opções:** **A) Electron** — empacota o Next standalone + Node num instalador nativo, com banco local por usuário e atualização automática. **B) Manter só navegador** — exigiria ambiente de desenvolvimento completo a cada máquina/atualização.
+- **Fator decisivo:** onboarding de usuário final sem fricção (baixar, duplo clique, funciona) pesa mais que o custo de manter um pipeline extra de empacotamento/publicação.
+- **Decisão:** empacotar como app desktop Electron para Windows. O processo principal (`electron/main.ts`) sobe o Next standalone (`output: "standalone"`) como um `utilityProcess.fork`, falando com um banco SQLite **por usuário**, criado em `app.getPath("userData")` (`%APPDATA%\english-glossary\glossary.db`). No boot, um runner de migrations próprio (`electron/server/migrate.cjs`) aplica o SQL das migrations do Prisma diretamente, registrando-as numa tabela `_prisma_migrations` byte-compatível com a do Prisma CLI — a máquina do usuário final não tem o Prisma CLI instalado. O instalador é gerado com `electron-builder` (NSIS, sem assinatura digital de código) e o app se atualiza sozinho via `electron-updater` contra os assets de uma release do GitHub (repositório público, para o auto-update funcionar sem autenticação). A chave de API de IA, que em desenvolvimento vem de `ANTHROPIC_API_KEY` no `.env`, passa a ser configurável pela tela **Configurações** dentro do app — a env var vira só um fallback de dev.
+- **Consequências:** distribuição sem fricção para o usuário final; o fluxo via navegador (`npm run dev`) continua existindo e é o usado no próprio desenvolvimento. Sem assinatura de código, a primeira instalação passa pelo aviso do SmartScreen do Windows. Migrations e banco por usuário significam que uma atualização de schema roda na máquina de cada usuário (mitigado por backup automático `glossary.db.bak-<data>` antes de aplicar).
 
 ## 9. Escalabilidade e evolução
 

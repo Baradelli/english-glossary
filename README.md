@@ -107,6 +107,57 @@ O banco começa **vazio**. Comece criando um tipo de fonte e uma fonte em
 | `npm run db:migrate` | aplica migrations (dev) |
 | `npm run db:reset` | recria o banco do zero |
 
+## Desktop (Windows)
+
+Além de rodar via `npm run dev`, o app é distribuído como aplicativo desktop
+nativo para Windows (Electron), com banco de dados **local por usuário** e
+atualização automática.
+
+**Para quem só quer usar:**
+
+- Baixe o instalador (`English Glossary Setup <versão>.exe`) na página de
+  [Releases](https://github.com/Baradelli/english-glossary/releases) do
+  GitHub. Duplo clique instala sem precisar de admin e abre sozinho.
+- **Aviso do SmartScreen:** o instalador não é assinado digitalmente, então na
+  primeira instalação o Windows mostra "O Windows protegeu o seu PC" → clique
+  em **"Mais informações"** → **"Executar assim mesmo"**. As atualizações
+  automáticas seguintes **não** passam por esse aviso.
+- Cada pessoa tem seu próprio banco, guardado em
+  `%APPDATA%\english-glossary\glossary.db` (a pasta de dados do usuário do
+  Windows).
+- Funciona **100% offline**; os recursos de IA são opcionais e exigem internet
+  e uma chave de API configurada na tela **Configurações** dentro do app.
+- **Backup:** exporte/restaure um JSON pela tela de Configurações. Além
+  disso, antes de qualquer atualização de schema o app cria automaticamente
+  uma cópia de segurança (`glossary.db.bak-<data>`) ao lado do banco.
+- **Atualizações:** o app verifica novas versões toda vez que abre e instala
+  ao reiniciar ou fechar.
+
+**Para quem desenvolve:**
+
+| Script | O quê |
+| --- | --- |
+| `npm run desktop:dev` | janela Electron sobre o `npm run dev` (rodando à parte), com HMR |
+| `npm run desktop:preview` | build completo do app empacotado, aberto sem gerar instalador |
+| `npm run desktop:build` | gera o instalador NSIS em `release/` |
+| `npm run desktop:publish` | build + publica um draft release no GitHub (exige `GH_TOKEN` com escopo `repo`) |
+
+Variáveis de ambiente: `GLOSSARY_DB_PATH` (sobrescreve o caminho do banco,
+usado em testes) e `GLOSSARY_DEV_URL` (uso interno do `desktop:dev`).
+
+**Checklist de release:**
+
+1. Suba a `version` no `package.json`.
+2. Faça o commit.
+3. Rode `GH_TOKEN=<token> npm run desktop:publish`.
+4. Confira no GitHub se o draft release tem o `.exe`, o `latest.yml` e o `.blockmap`.
+5. Publique o release (tirar do modo draft).
+6. Os apps já instalados atualizam sozinhos no próximo boot.
+
+> Os assets do release precisam estar **públicos** (repositório público) para
+> o auto-update funcionar — o `electron-updater` lê `latest.yml`/`.exe`
+> anonimamente, sem autenticação.
+
 ## Testes
 
 TDD: teste primeiro, ver falhar, implementar. **149 testes** (Vitest), **100% de
