@@ -3,10 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Belt-and-suspenders: this file is only ever loaded via loadFile() from
+         our own disk, but the CSP still blocks any external resource load
+         (script/img/connect/etc.) should this markup ever be changed to
+         reference one. Inline styles are allowed since that's how this file
+         paints instantly, before the Next server is even listening. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'" />
     <title>English Glossary</title>
     <style>
-      /* No external resources: the CSP would block them and the splash must
-         paint instantly before the Next server is even listening. */
       * {
         margin: 0;
         padding: 0;
@@ -52,6 +56,23 @@
       @keyframes spin {
         to {
           transform: rotate(360deg);
+        }
+      }
+      /* Static only (this file has no JS): the splash is shown before we know
+         the user's saved theme preference, so it can only go by the OS-level
+         preference, same as the anti-FOUC script in app/layout.tsx. Prevents
+         a bright flash for dark-OS users while the server boots. */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #020617; /* slate-950, matches app/layout.tsx's dark:bg-slate-950 */
+          color: #f1f5f9; /* slate-100 */
+        }
+        .status {
+          color: #94a3b8; /* slate-400 */
+        }
+        .spinner {
+          border-color: #334155; /* slate-700 */
+          border-top-color: #f1f5f9; /* slate-100 */
         }
       }
     </style>

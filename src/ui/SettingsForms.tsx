@@ -179,7 +179,7 @@ export function SettingsAiForm({
         ) : null}
         {envKeyPresent && !hasApiKey ? (
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Uma chave do arquivo .env está ativa como fallback.
+            Uma chave de API do ambiente está ativa como fallback.
           </p>
         ) : null}
       </div>

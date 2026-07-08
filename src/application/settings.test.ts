@@ -158,6 +158,20 @@ describe("saveAiSettings", () => {
     expect(await repo.get(SETTING_KEYS.aiApiKey)).toBeNull();
   });
 
+  it("rejects an invalid apiKey even when clearKey is true, and leaves the stored key untouched", async () => {
+    // Validation runs before the clearKey branch: a bad apiKey value fails
+    // the whole call, so clearKey never gets a chance to run. This pins that
+    // ordering as intended behavior, not an accident.
+    const repo = fakeSettingsRepository({ [SETTING_KEYS.aiApiKey]: VALID_KEY });
+    const result = await saveAiSettings(repo, {
+      apiKey: "garbage-not-sk-ant",
+      model: "",
+      clearKey: true,
+    });
+    expect(result).toEqual({ ok: false, error: "A chave deve começar com sk-ant-." });
+    expect(await repo.get(SETTING_KEYS.aiApiKey)).toBe(VALID_KEY);
+  });
+
   it("removes the model key when model is empty (reverts to default)", async () => {
     const repo = fakeSettingsRepository({ [SETTING_KEYS.aiModel]: "claude-sonnet-5" });
     const result = await saveAiSettings(repo, { apiKey: "", model: "" });

@@ -130,7 +130,9 @@ export async function exportAll(prisma: PrismaClient): Promise<Backup> {
     words: words.map((r) => ({
       id: r.id,
       term: r.term,
-      kind: r.kind as "palavra" | "expressao",
+      // Coerce rather than cast: a corrupted DB value must not silently
+      // produce a backup that later fails restore's own schema validation.
+      kind: r.kind === "expressao" ? "expressao" : "palavra",
       definitionEn: r.definitionEn,
       definitionPt: r.definitionPt,
       examples: z.array(z.string()).parse(JSON.parse(r.examples)),
@@ -332,12 +334,13 @@ export async function replaceAll(
       },
       { timeout: 60_000 },
     );
-  } catch {
+  } catch (err) {
     // The file passed schema validation but is referentially broken (e.g. a
     // sighting/word pointing at an id absent from the payload) — SQLite's
     // foreign_keys pragma throws mid-transaction, which rolls everything
     // back. No data was lost; report it the same friendly way as a schema
     // failure instead of letting the throw escape as a generic server error.
+    console.error("[backup] replaceAll failed:", err);
     return {
       ok: false,
       error: "Não foi possível restaurar o backup — nenhum dado foi alterado.",

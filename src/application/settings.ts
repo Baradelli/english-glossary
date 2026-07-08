@@ -24,6 +24,9 @@ export interface SettingsView {
   onboardingSeenAt: string | null;
 }
 
+// Relies on saveAiSettings enforcing a minimum key length of 20 (see
+// AiSettingsSchema) — a key that short could never reach the DB, so
+// slice(-4) here can never expose more than a small tail of a long key.
 function apiKeyHint(apiKey: string): string {
   return `sk-ant-…${apiKey.slice(-4)}`;
 }
