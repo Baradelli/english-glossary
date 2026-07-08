@@ -104,3 +104,9 @@ model ExamWord {
   @@unique([examId, wordId])
   @@index([wordId])
 }
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

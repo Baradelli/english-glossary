@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { PrismaExamRepository } from "./PrismaExamRepository.js";
 import { PrismaReviewLogRepository } from "./PrismaReviewLogRepository.js";
+import { PrismaSettingRepository } from "./PrismaSettingRepository.js";
 import { PrismaSourceRepository } from "./PrismaSourceRepository.js";
 import { PrismaSourceTypeRepository } from "./PrismaSourceTypeRepository.js";
 import { PrismaWordRepository } from "./PrismaWordRepository.js";
@@ -15,6 +16,7 @@ export function createRepositories(prisma: PrismaClient) {
     sourceTypes: new PrismaSourceTypeRepository(prisma),
     reviewLogs: new PrismaReviewLogRepository(prisma),
     exams: new PrismaExamRepository(prisma),
+    settings: new PrismaSettingRepository(prisma),
   };
 }
 

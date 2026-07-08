@@ -8,6 +8,7 @@ describe("createRepositories", () => {
     expect(Object.keys(repos).sort()).toEqual([
       "exams",
       "reviewLogs",
+      "settings",
       "sightings",
       "sourceTypes",
       "sources",
@@ -16,5 +17,6 @@ describe("createRepositories", () => {
     expect(typeof repos.words.findByTerm).toBe("function");
     expect(typeof repos.sightings.listBySource).toBe("function");
     expect(typeof repos.exams.submitCorrection).toBe("function");
+    expect(typeof repos.settings.getMany).toBe("function");
   });
 });

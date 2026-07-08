@@ -205,3 +205,11 @@ export interface ExamRepository {
    */
   submitCorrection(examId: string, correction: ExamCorrection): Promise<Exam>;
 }
+
+/** Key-value app settings (AI provider config, theme, onboarding flags, ...). */
+export interface SettingsRepository {
+  get(key: string): Promise<string | null>;
+  getMany(keys: readonly string[]): Promise<Record<string, string>>;
+  set(key: string, value: string): Promise<void>;
+  delete(key: string): Promise<void>;
+}
