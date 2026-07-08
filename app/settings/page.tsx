@@ -9,6 +9,7 @@ import {
   SettingsBackupSection,
   SettingsOnboardingSection,
 } from "../../src/ui/SettingsForms.js";
+import { ThemeToggle } from "../../src/ui/ThemeToggle.js";
 
 export const dynamic = "force-dynamic";
 
@@ -58,9 +59,12 @@ export default async function SettingsPage(): Promise<ReactNode> {
 
       <section className={cardClass}>
         <h2 className="text-lg font-semibold">Aparência</h2>
-        <p className="mt-2 text-sm text-slate-500">
-          O tema claro/escuro chega em uma próxima atualização.
-        </p>
+        <div className="mt-4">
+          <ThemeToggle initialTheme={view.theme} />
+          <p className="mt-2 text-sm text-slate-500">
+            &quot;Sistema&quot; acompanha o tema do Windows.
+          </p>
+        </div>
       </section>
 
       <section className={cardClass}>

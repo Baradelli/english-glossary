@@ -29,6 +29,7 @@ import {
   resetOnboarding,
   reviewWordById,
   saveAiSettings,
+  saveTheme,
   submitExamAnswers,
   submitExamCorrection,
   updateSighting,
@@ -496,6 +497,24 @@ export async function restoreBackupAction(
 
   revalidatePath("/", "layout");
   return { ok: true, message: "Backup restaurado." };
+}
+
+// ── Settings: theme ──────────────────────────────────────────────────────────
+
+/**
+ * Saves the theme choice ("light" | "dark" | "system"). The layout applies it
+ * server-side (`getSettingsView(repos.settings)`), so `revalidatePath("/",
+ * "layout")` is enough — no cookie, no localStorage. The toggle applies the
+ * change optimistically on the client before this round trip resolves; this
+ * action just makes it durable.
+ */
+export async function saveThemeAction(formData: FormData): Promise<FormState> {
+  const theme = field(formData, "theme");
+  const result = await saveTheme(repos.settings, theme);
+  if (!result.ok) return { error: result.error };
+
+  revalidatePath("/", "layout");
+  return { ok: true };
 }
 
 // ── Onboarding: driver.js tour on the dashboard ─────────────────────────────

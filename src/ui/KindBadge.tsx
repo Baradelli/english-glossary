@@ -9,7 +9,7 @@ import type { WordKind } from "../domain/index.js";
 export function KindBadge({ kind }: { kind: WordKind }): ReactNode {
   if (kind !== "expressao") return null;
   return (
-    <span className="inline-flex rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-800">
+    <span className="inline-flex rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-800 dark:bg-violet-950 dark:text-violet-300">
       expressão
     </span>
   );

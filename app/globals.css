@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme mechanism (Task 16): `html.dark` toggles Tailwind's `dark:` variant;
+   `color-scheme` tells the UA to render native widgets (scrollbars, form
+   controls) with the matching palette. */
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
 /* Onboarding tour (driver.js) popover — styled to match the app's cards.
    Light-only for now; dark mode for this component is Fase 4's job. */
 .driver-popover.eg-tour {

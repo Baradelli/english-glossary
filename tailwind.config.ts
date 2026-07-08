@@ -2,6 +2,7 @@ import type { Config } from "tailwindcss";
 import animate from "tailwindcss-animate";
 
 export default {
+  darkMode: "class",
   content: ["./app/**/*.{ts,tsx}", "./src/ui/**/*.{ts,tsx}"],
   theme: {
     extend: {},
