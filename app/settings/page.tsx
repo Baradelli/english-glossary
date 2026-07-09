@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { ReactNode } from "react";
+import packageJson from "../../package.json";
 import { getSettingsView } from "../../src/application/index.js";
 import { DEFAULT_MODEL } from "../../src/infra/ai/ApiAiProvider.js";
 import { repos } from "../../src/server/container.js";
@@ -72,6 +73,19 @@ export default async function SettingsPage(): Promise<ReactNode> {
         <div className="mt-4">
           <SettingsOnboardingSection />
         </div>
+      </section>
+
+      <section className={cardClass}>
+        <h2 className="text-lg font-semibold">Sobre</h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          English Glossary{" "}
+          <span className="font-medium text-slate-900 dark:text-slate-100">
+            v{packageJson.version}
+          </span>
+        </p>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          As atualizações são baixadas automaticamente ao abrir o app.
+        </p>
       </section>
     </div>
   );
