@@ -44,6 +44,14 @@ async function seed(): Promise<void> {
     examples: [],
     nextReview: NOW,
   });
+  await words.appendObservation(
+    ramble.id,
+    "Pode soar negativo quando a fala se alonga demais.",
+  );
+  await words.appendObservation(
+    ramble.id,
+    "É comum em contextos informais.",
+  );
   // A fixed expression (kind: "expressao") — must survive an export→restore
   // round trip without being demoted to "palavra" (the v1 backup bug).
   await words.create({
@@ -106,7 +114,7 @@ beforeEach(resetDb);
 describe("backup — exportAll", () => {
   it("dumps an empty database as empty arrays with a version", async () => {
     const dump = await exportAll(prisma);
-    expect(dump.version).toBe(3);
+    expect(dump.version).toBe(4);
     expect(dump.words).toEqual([]);
     expect(dump.exams).toEqual([]);
     expect(dump.examQuestions).toEqual([]);
@@ -127,6 +135,12 @@ describe("backup — exportAll", () => {
       "I ramble a lot.",
     ]);
     expect(dump.exams[0]?.resultJson?.score).toBe(50);
+    expect(
+      dump.words.find((w) => w.term === "ramble")?.observations,
+    ).toEqual([
+      "Pode soar negativo quando a fala se alonga demais.",
+      "É comum em contextos informais.",
+    ]);
   });
 });
 
@@ -198,8 +212,8 @@ describe("backup — v1 compatibility (import defaults kind)", () => {
     await importAll(prisma, v1);
     const stored = await prisma.word.findUnique({ where: { id: "w1" } });
     expect(stored?.kind).toBe("palavra");
-    // And the re-export tags the whole file as v3 going forward.
-    expect((await exportAll(prisma)).version).toBe(3);
+    // And the re-export tags the whole file as v4 going forward.
+    expect((await exportAll(prisma)).version).toBe(4);
   });
 });
 
@@ -207,7 +221,7 @@ describe("backup — replaceAll (restore = wipe + import, transactional)", () =>
   it("round trips the current version, preserving kind, and wipes prior data", async () => {
     await seed();
     const before = await exportAll(prisma);
-    expect(before.version).toBe(3);
+    expect(before.version).toBe(4);
     expect(before.words.some((w) => w.kind === "expressao")).toBe(true);
 
     // Simulate writing to a file and reading it back.
@@ -327,7 +341,7 @@ describe("backup — replaceAll (restore = wipe + import, transactional)", () =>
   });
 });
 
-describe("backup — v3 (quiz engine: questions + practice link)", () => {
+describe("backup — v3/v4 (quiz questions, explanations and observations)", () => {
   /** Seeds a finished quiz, its answered questions and a practice quiz. */
   async function seedQuiz(): Promise<{ originId: string; practiceId: string }> {
     const ramble = await words.create({
@@ -351,6 +365,12 @@ describe("backup — v3 (quiz engine: questions + practice link)", () => {
           correctAnswer: null,
           contextSentence: null,
           explanation: null,
+          optionExplanations: [
+            "É a tradução correta.",
+            "É um adjetivo relacionado.",
+            "Significa shortcut.",
+            "Significa goal.",
+          ],
         },
       ],
     });
@@ -387,16 +407,17 @@ describe("backup — v3 (quiz engine: questions + practice link)", () => {
           correctAnswer: "ramble",
           contextSentence: "Sorry, I ramble.",
           explanation: null,
+          optionExplanations: null,
         },
       ],
     });
     return { originId: origin.id, practiceId: practice.id };
   }
 
-  it("round trips a v3 backup with questions and the practice self-link", async () => {
+  it("round trips a v4 backup with questions and the practice self-link", async () => {
     const { originId, practiceId } = await seedQuiz();
     const before = await exportAll(prisma);
-    expect(before.version).toBe(3);
+    expect(before.version).toBe(4);
     expect(before.examQuestions).toHaveLength(2);
     expect(
       before.exams.find((e) => e.id === practiceId)?.practiceOfId,
@@ -419,12 +440,46 @@ describe("backup — v3 (quiz engine: questions + practice link)", () => {
     expect(answered?.userAnswer).toBe("prolixo");
     expect(answered?.isCorrect).toBe(false);
     expect(answered?.options).toEqual(["divagar", "prolixo", "atalho", "meta"]);
+    expect(answered?.optionExplanations).toEqual([
+      "É a tradução correta.",
+      "É um adjetivo relacionado.",
+      "Significa shortcut.",
+      "Significa goal.",
+    ]);
     expect(after.exams.find((e) => e.id === practiceId)?.practiceOfId).toBe(
       originId,
     );
     expect(after.exams.find((e) => e.id === originId)?.finishedAt).toBe(
       LATER.toISOString(),
     );
+  });
+
+  it("imports a v3 file without new fields using safe defaults", async () => {
+    await seedQuiz();
+    const legacy = JSON.parse(JSON.stringify(await exportAll(prisma))) as {
+      version: number;
+      words: Array<Record<string, unknown>>;
+      examQuestions: Array<Record<string, unknown>>;
+    };
+    legacy.version = 3;
+    for (const word of legacy.words) delete word["observations"];
+    for (const question of legacy.examQuestions) {
+      delete question["optionExplanations"];
+    }
+
+    await resetDb();
+    await importAll(prisma, legacy);
+
+    const dump = await exportAll(prisma);
+    expect(dump.version).toBe(4);
+    expect(dump.words.every((word) => word.observations.length === 0)).toBe(
+      true,
+    );
+    expect(
+      dump.examQuestions.every(
+        (question) => question.optionExplanations === null,
+      ),
+    ).toBe(true);
   });
 
   it("replaceAll wipes exam questions before re-inserting", async () => {

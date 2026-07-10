@@ -15,6 +15,7 @@ import {
   type WordKind,
 } from "../domain/index.js";
 import {
+  addWordObservation,
   answerQuizQuestion,
   autoCorrectExam,
   captureInSource,
@@ -191,6 +192,25 @@ export async function updateWordAction(
   }
   revalidatePath(`/glossary/${wordId}`);
   return { ok: true, redirectTo: `/glossary/${wordId}` };
+}
+
+export async function addWordObservationAction(
+  formData: FormData,
+): Promise<FormState> {
+  const wordId = field(formData, "wordId");
+  const text = field(formData, "text");
+  const examId = field(formData, "examId");
+  if (!wordId) return { error: "Palavra ausente." };
+
+  try {
+    await addWordObservation(repos.words, { wordId, text });
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
+
+  revalidatePath(`/glossary/${wordId}`);
+  if (examId) revalidatePath(`/exams/${examId}`);
+  return { ok: true, message: "Observação adicionada ao glossário." };
 }
 
 export async function updateSightingAction(

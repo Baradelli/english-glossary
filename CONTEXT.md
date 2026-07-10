@@ -5,7 +5,7 @@ A single-user tool for capturing English vocabulary and expressions encountered 
 ## Language
 
 **Verbete** (lexical entry):
-A single reviewable unit in the glossary — persisted as a `Word` row and scheduled by SM-2. Every verbete is either a _Palavra_ or an _Expressão_, distinguished by its `kind`. The two share the same shape (canonical form, EN/PT meaning, examples, SRS state, sightings) and the same review queue and exams.
+A single reviewable unit in the glossary — persisted as a `Word` row and scheduled by SM-2. Every verbete is either a _Palavra_ or an _Expressão_, distinguished by its `kind`. The two share the same shape (canonical form, EN/PT meaning, examples, accumulated observations, SRS state, sightings) and the same review queue and exams.
 _Avoid_: "card", "entry" (use _verbete_)
 
 **Palavra** (word):
@@ -32,7 +32,10 @@ _Avoid_: calling the AI the grader — the AI only writes questions; the app gra
 An incorrect multiple-choice alternative. Written by the AI (a plausible mistake a Brazilian learner would make), then validated: the four alternatives must be non-empty and distinct.
 
 **Explicação** (explanation):
-A short PT note the AI attaches to each questão explaining why the correct alternative is right; shown to the learner only _after_ answering, so a prova doubles as a lesson.
+A short PT reason attached to each alternative explaining why that option is right or wrong. Explanations stay paired with their alternatives while the app reshuffles them. After each answer, only the correct alternative's reason may appear in immediate feedback; the complete set is revealed in the expandable review of a finished prova. Older questões may have only the correct-answer explanation.
+
+**Observação** (observation):
+Student-curated context appended to a verbete while studying: a nuance, association, usage warning or lesson taken from a prova. Observações are explicit and append-only; AI output is never saved automatically. They become context for future prova and comprehension prompts.
 
 **Prova de prática** (practice exam):
 A follow-up quiz (`type = "pratica"`) whose verbetes are only those answered wrong in a finished prova (`practiceOfId` points back to it). The AI writes fresh questions for them, so practice never repeats the exact same wording. Updates SRS like any prova.

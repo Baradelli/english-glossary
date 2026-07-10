@@ -5,6 +5,7 @@ import { getWordDetail } from "../../../src/application/index.js";
 import { wordViewDeps } from "../../../src/server/container.js";
 import { StateBadge } from "../../../src/ui/StateBadge.js";
 import { KindBadge } from "../../../src/ui/KindBadge.js";
+import { WordObservationForm } from "../../../src/ui/WordObservationForm.js";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +69,24 @@ export default async function WordPage({
           </ul>
         </section>
       ) : null}
+
+      <section>
+        <h2 className="text-sm font-medium text-slate-500 dark:text-slate-400">
+          Observações ({word.observations.length})
+        </h2>
+        {word.observations.length > 0 ? (
+          <ol className="mt-2 divide-y divide-slate-100 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+            {word.observations.map((observation, index) => (
+              <li key={index} className="whitespace-pre-wrap py-3 text-sm">
+                {observation}
+              </li>
+            ))}
+          </ol>
+        ) : null}
+        <div className="mt-4 max-w-2xl">
+          <WordObservationForm wordId={word.id} />
+        </div>
+      </section>
 
       <section>
         <h2 className="text-sm font-medium text-slate-500 dark:text-slate-400">

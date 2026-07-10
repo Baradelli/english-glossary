@@ -167,6 +167,12 @@ function mcQuestion(wordId: string, position: number): NewExamQuestion {
     correctAnswer: null,
     contextSentence: null,
     explanation: null,
+    optionExplanations: [
+      "É a tradução correta.",
+      "Descreve uma fala longa, não o verbo.",
+      "É uma expressão diferente.",
+      "Significa shortcut.",
+    ],
   };
 }
 
@@ -182,6 +188,7 @@ function typedQuestion(wordId: string, position: number): NewExamQuestion {
     correctAnswer: "ramble",
     contextSentence: "Sorry, I ramble.",
     explanation: null,
+    optionExplanations: null,
   };
 }
 
@@ -208,6 +215,12 @@ describe("PrismaExamRepository — createQuiz", () => {
       "prolixo",
       "quebrar o gelo",
       "atalho",
+    ]);
+    expect(questions[0]?.optionExplanations).toEqual([
+      "É a tradução correta.",
+      "Descreve uma fala longa, não o verbo.",
+      "É uma expressão diferente.",
+      "Significa shortcut.",
     ]);
     expect(questions[0]?.answeredAt).toBeNull();
   });

@@ -11,6 +11,11 @@ import {
 } from "../../../src/ui/ExamForms.js";
 import { QuizResultActions } from "../../../src/ui/QuizResultActions.js";
 import { QuizRunner, type QuizQuestionVM } from "../../../src/ui/QuizRunner.js";
+import { WordObservationForm } from "../../../src/ui/WordObservationForm.js";
+import {
+  buildObservationSeed,
+  buildOptionReview,
+} from "../../../src/ui/lib/quizReview.js";
 import { cardClass } from "../../../src/ui/controls.js";
 import type {
   Exam,
@@ -116,58 +121,142 @@ async function QuizResult({ exam }: { exam: Exam }): Promise<ReactNode> {
           {questions.map((question) => {
             const correct = question.isCorrect === true;
             const term = termById.get(question.wordId);
+            const optionReview = buildOptionReview(question);
+            const observationSeed = buildObservationSeed(question);
             return (
-              <li key={question.id} className="flex items-start gap-3 py-3">
-                <span
-                  className={
-                    correct
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : "text-red-600 dark:text-red-400"
-                  }
-                >
-                  <span aria-hidden>{correct ? "✓" : "✗"}</span>
-                  <span className="sr-only">{correct ? "Acertou" : "Errou"}</span>
-                </span>
-                <div className="min-w-0 space-y-1">
-                  {term ? (
-                    <Link
-                      href={`/glossary/${question.wordId}`}
-                      className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+              <li key={question.id} id={"question-" + question.id}>
+                <details className="group">
+                  <summary className="flex cursor-pointer list-none items-start gap-3 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 [&::-webkit-details-marker]:hidden">
+                    <span
+                      className={
+                        correct
+                          ? "mt-0.5 text-emerald-600 dark:text-emerald-400"
+                          : "mt-0.5 text-red-600 dark:text-red-400"
+                      }
                     >
-                      {term}
-                    </Link>
-                  ) : (
-                    <span className="font-medium text-slate-500 dark:text-slate-400">
-                      (palavra removida)
+                      <span aria-hidden>{correct ? "✓" : "✗"}</span>
+                      <span className="sr-only">
+                        {correct ? "Acertou" : "Errou"}
+                      </span>
                     </span>
-                  )}
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {question.prompt}
-                  </p>
-                  <p className="text-sm">
-                    Sua resposta:{" "}
-                    <span className="font-medium">{userAnswerText(question)}</span>
-                    {!correct ? (
-                      <>
-                        {" "}
-                        · Correta:{" "}
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium">
+                        {term ?? "(palavra removida)"}
+                      </span>
+                      <span className="mt-0.5 block text-sm text-slate-600 dark:text-slate-400">
+                        {question.prompt}
+                      </span>
+                      <span className="mt-1 block text-sm">
+                        Sua resposta:{" "}
                         <span className="font-medium">
-                          {correctAnswerText(question)}
+                          {userAnswerText(question)}
                         </span>
-                      </>
+                      </span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-2 text-xs font-medium text-blue-600 dark:text-blue-400">
+                      Ver análise
+                      <span
+                        aria-hidden
+                        className="transition-transform group-open:rotate-180 motion-reduce:transition-none"
+                      >
+                        ▾
+                      </span>
+                    </span>
+                  </summary>
+
+                  <div className="pb-5 pl-8">
+                    {question.contextSentence ? (
+                      <p className="mb-4 text-sm italic text-slate-500 dark:text-slate-400">
+                        Frase da fonte: “{question.contextSentence}”
+                      </p>
                     ) : null}
-                  </p>
-                  {question.explanation ? (
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      {question.explanation}
-                    </p>
-                  ) : null}
-                  {question.contextSentence ? (
-                    <p className="text-sm italic text-slate-500 dark:text-slate-400">
-                      “{question.contextSentence}”
-                    </p>
-                  ) : null}
-                </div>
+
+                    {optionReview.length > 0 ? (
+                      <ol className="space-y-2" aria-label="Análise das alternativas">
+                        {optionReview.map((option, index) => (
+                          <li
+                            key={index}
+                            className={
+                              option.correct
+                                ? "rounded-md border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900 dark:bg-emerald-950"
+                                : option.selected
+                                  ? "rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950"
+                                  : "rounded-md border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900"
+                            }
+                          >
+                            <div className="flex flex-wrap items-start gap-2">
+                              <span className="font-mono text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                {String.fromCharCode(65 + index)}
+                              </span>
+                              <span className="min-w-0 flex-1 text-sm font-medium">
+                                {option.text}
+                              </span>
+                              <span
+                                className={
+                                  option.correct
+                                    ? "rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200"
+                                    : "rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                }
+                              >
+                                {option.correct ? "Correta" : "Incorreta"}
+                              </span>
+                              {option.selected ? (
+                                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                  Sua resposta
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                              {option.explanation ??
+                                "Explicação individual indisponível nesta prova anterior."}
+                            </p>
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <div className="space-y-1 text-sm">
+                        <p>
+                          Sua resposta:{" "}
+                          <span className="font-medium">
+                            {userAnswerText(question)}
+                          </span>
+                        </p>
+                        <p>
+                          Resposta correta:{" "}
+                          <span className="font-medium">
+                            {correctAnswerText(question)}
+                          </span>
+                        </p>
+                        {question.explanation ? (
+                          <p className="text-slate-600 dark:text-slate-400">
+                            {question.explanation}
+                          </p>
+                        ) : null}
+                      </div>
+                    )}
+
+                    {term ? (
+                      <div className="mt-5 border-t border-slate-200 pt-4 dark:border-slate-800">
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                          <h3 className="text-sm font-semibold">
+                            Guardar no glossário
+                          </h3>
+                          <Link
+                            href={"/glossary/" + question.wordId}
+                            className="text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+                          >
+                            Abrir {term}
+                          </Link>
+                        </div>
+                        <WordObservationForm
+                          wordId={question.wordId}
+                          examId={exam.id}
+                          initialText={observationSeed}
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                </details>
               </li>
             );
           })}

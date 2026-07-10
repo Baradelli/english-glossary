@@ -122,6 +122,10 @@ export class PrismaExamRepository implements ExamRepository {
             correctAnswer: q.correctAnswer,
             contextSentence: q.contextSentence,
             explanation: q.explanation,
+            optionExplanations:
+              q.optionExplanations === null
+                ? null
+                : JSON.stringify(q.optionExplanations),
           })),
         },
       },

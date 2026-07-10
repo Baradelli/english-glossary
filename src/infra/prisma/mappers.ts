@@ -68,6 +68,7 @@ export function toWord(row: PrismaWord): Word {
     definitionEn: row.definitionEn,
     definitionPt: row.definitionPt,
     examples: decodeExamples(row.examples),
+    observations: decodeStringArray(row.observations, "Word.observations"),
     easeFactor: row.easeFactor,
     intervalDays: row.intervalDays,
     repetitions: row.repetitions,
@@ -121,6 +122,13 @@ export function toExamQuestion(row: PrismaExamQuestion): ExamQuestion {
     correctAnswer: row.correctAnswer,
     contextSentence: row.contextSentence,
     explanation: row.explanation,
+    optionExplanations:
+      row.optionExplanations === null
+        ? null
+        : decodeStringArray(
+            row.optionExplanations,
+            "ExamQuestion.optionExplanations",
+          ),
     userAnswer: row.userAnswer,
     isCorrect: row.isCorrect,
     answeredAt: row.answeredAt,
@@ -152,4 +160,3 @@ export function toExam(row: PrismaExam): Exam {
     createdAt: row.createdAt,
   };
 }
-

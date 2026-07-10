@@ -38,6 +38,7 @@ model Word {
   definitionEn  String
   definitionPt  String
   examples      String // JSON-encoded string[] of authorial sentences (SQLite has no Json/array type)
+  observations  String         @default("[]") // JSON-encoded string[] of student-added context
   // SRS fields (§6 / §6.1). State is derived, never stored.
   easeFactor    Float          @default(2.5)
   intervalDays  Int            @default(0)
@@ -102,22 +103,23 @@ model Exam {
 }
 
 model ExamQuestion {
-  id              String    @id @default(cuid())
-  exam            Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
-  examId          String
-  word            Word      @relation(fields: [wordId], references: [id], onDelete: Cascade)
-  wordId          String
-  position        Int
-  type            String // 'mc_en_pt' | 'mc_pt_en' | 'typed' | 'cloze' | 'ai_context'
-  prompt          String
-  options         String? // JSON-encoded string[] of choices (SQLite has no array type)
-  correctIndex    Int? // multiple choice only
-  correctAnswer   String? // typed/cloze only
-  contextSentence String? // the source sentence backing a cloze/ai question
-  explanation     String? // short PT explanation of the correct answer (AI-generated)
-  userAnswer      String?
-  isCorrect       Boolean?
-  answeredAt      DateTime?
+  id                 String    @id @default(cuid())
+  exam               Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
+  examId             String
+  word               Word      @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  wordId             String
+  position           Int
+  type               String // 'mc_en_pt' | 'mc_pt_en' | 'typed' | 'cloze' | 'ai_context'
+  prompt             String
+  options            String? // JSON-encoded string[] of choices (SQLite has no array type)
+  correctIndex       Int? // multiple choice only
+  correctAnswer      String? // typed/cloze only
+  contextSentence    String? // the source sentence backing a cloze/ai question
+  explanation        String? // short PT explanation of the correct answer (AI-generated)
+  optionExplanations String? // JSON-encoded string[] aligned with options; null on legacy questions
+  userAnswer         String?
+  isCorrect          Boolean?
+  answeredAt         DateTime?
 
   // One question per word per exam keeps ExamWord's uniqueness invariant.
   @@unique([examId, position])

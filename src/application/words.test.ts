@@ -3,6 +3,7 @@ import { getTestPrisma, resetDb } from "../../test/helpers/db.js";
 import { createRepositories } from "../infra/prisma/repositories.js";
 import { ensureSource, ensureSourceType } from "./sources.js";
 import {
+  addWordObservation,
   captureInSource,
   getWordDetail,
   listGlossary,
@@ -296,6 +297,75 @@ describe("updateWord", () => {
         examples: [],
       }),
     ).rejects.toThrow();
+  });
+});
+
+describe("addWordObservation", () => {
+  it("trims and appends observations without replacing previous context", async () => {
+    const sourceId = await aSource();
+    const { word } = await registerNewWord(
+      repos.words,
+      input({ sourceId, kind: "expressao" }),
+      NOW,
+    );
+
+    await addWordObservation(repos.words, {
+      wordId: word.id,
+      text: "  Mais comum em conversas informais.  ",
+    });
+    const updated = await addWordObservation(repos.words, {
+      wordId: word.id,
+      text: "Pode indicar que alguém se alongou demais.",
+    });
+
+    expect(updated.observations).toEqual([
+      "Mais comum em conversas informais.",
+      "Pode indicar que alguém se alongou demais.",
+    ]);
+    expect((await getWordDetail(wordDeps, word.id))?.word.observations).toEqual(
+      updated.observations,
+    );
+  });
+
+  it("rejects blank text and an unknown word", async () => {
+    const sourceId = await aSource();
+    const { word } = await registerNewWord(
+      repos.words,
+      input({ sourceId }),
+      NOW,
+    );
+
+    await expect(
+      addWordObservation(repos.words, { wordId: word.id, text: "   " }),
+    ).rejects.toThrow("observação");
+    await expect(
+      addWordObservation(repos.words, {
+        wordId: "missing",
+        text: "Contexto válido.",
+      }),
+    ).rejects.toThrow("Palavra inexistente");
+  });
+
+  it("accepts 2,000 characters and rejects anything longer", async () => {
+    const sourceId = await aSource();
+    const { word } = await registerNewWord(
+      repos.words,
+      input({ sourceId }),
+      NOW,
+    );
+
+    const accepted = await addWordObservation(repos.words, {
+      wordId: word.id,
+      text: "a".repeat(2_000),
+    });
+    expect(accepted.observations[0]).toHaveLength(2_000);
+
+    await expect(
+      addWordObservation(repos.words, {
+        wordId: word.id,
+        text: "a".repeat(2_001),
+      }),
+    ).rejects.toThrow("2000");
   });
 });
 

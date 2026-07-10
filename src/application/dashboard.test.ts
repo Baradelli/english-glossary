@@ -156,6 +156,7 @@ describe("getDashboardData", () => {
           correctAnswer: "blend",
           contextSentence: null,
           explanation: null,
+          optionExplanations: null,
         },
       ],
     });
@@ -227,6 +228,7 @@ describe("getDashboardData", () => {
           correctAnswer: "tricky",
           contextSentence: null,
           explanation: null,
+          optionExplanations: null,
         },
       ],
     });

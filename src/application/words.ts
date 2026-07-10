@@ -14,6 +14,7 @@ import {
   type WordSightingRepository,
 } from "../domain/index.js";
 import type {
+  AddWordObservationInput,
   CaptureInSourceInput,
   EditWordInput,
   RecordReencounterInput,
@@ -140,6 +141,28 @@ export async function updateWord(
     definitionPt: input.definitionPt,
     examples: input.examples,
   });
+}
+
+export const MAX_WORD_OBSERVATION_LENGTH = 2_000;
+
+/** Appends student-curated context without replacing any existing word data. */
+export async function addWordObservation(
+  words: WordRepository,
+  input: AddWordObservationInput,
+): Promise<Word> {
+  const text = input.text.trim();
+  if (text.length === 0) {
+    throw new Error("A observação é obrigatória.");
+  }
+  if (text.length > MAX_WORD_OBSERVATION_LENGTH) {
+    throw new Error(
+      `A observação deve ter no máximo ${MAX_WORD_OBSERVATION_LENGTH} caracteres.`,
+    );
+  }
+  if (!(await words.findById(input.wordId))) {
+    throw new Error(`Palavra inexistente: ${input.wordId}`);
+  }
+  return words.appendObservation(input.wordId, text);
 }
 
 export async function searchWord(

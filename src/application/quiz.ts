@@ -85,6 +85,7 @@ function toQuizWordInput(
     kind: word.kind,
     definitionEn: word.definitionEn,
     definitionPt: word.definitionPt,
+    observations: word.observations,
     contextSentences,
   };
 }
@@ -118,6 +119,7 @@ function toPromptWord(word: QuizWordInput): PromptWord {
     term: word.term,
     definitionEn: word.definitionEn,
     definitionPt: word.definitionPt,
+    observations: word.observations,
     contextSentences: word.contextSentences,
   };
 }

@@ -33,6 +33,7 @@ function toPromptWord(word: Word): PromptWord {
     definitionEn: word.definitionEn,
     definitionPt: word.definitionPt,
     examples: word.examples,
+    observations: word.observations,
   };
 }
 

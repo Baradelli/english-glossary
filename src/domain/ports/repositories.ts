@@ -85,6 +85,8 @@ export interface WordRepository {
   listAll(): Promise<Word[]>;
   /** Edits a word's general definition/examples (not its term or SRS state). */
   update(id: string, data: UpdateWord): Promise<Word>;
+  /** Appends student context without replacing definitions or earlier observations. */
+  appendObservation(id: string, observation: string): Promise<Word>;
   updateSrs(id: string, srs: SrsUpdate): Promise<Word>;
 }
 
@@ -211,6 +213,8 @@ export interface NewExamQuestion {
   readonly contextSentence: string | null;
   /** Short PT explanation of the correct answer, shown after answering. */
   readonly explanation: string | null;
+  /** Per-option PT explanations aligned with options; null for legacy questions. */
+  readonly optionExplanations: readonly string[] | null;
 }
 
 /** A local quiz to open: the exam shell plus every generated question. */

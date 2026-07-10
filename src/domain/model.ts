@@ -44,6 +44,8 @@ export interface Word {
   readonly definitionEn: string;
   readonly definitionPt: string;
   readonly examples: string[];
+  /** Student-added context accumulated over time. */
+  readonly observations: string[];
   readonly easeFactor: number;
   readonly intervalDays: number;
   readonly repetitions: number;
@@ -122,6 +124,8 @@ export interface ExamQuestion {
   readonly contextSentence: string | null;
   /** Short PT explanation of the correct answer, shown after answering (AI questions). */
   readonly explanation: string | null;
+  /** Per-option PT explanations aligned with the options; null on legacy questions. */
+  readonly optionExplanations: string[] | null;
   readonly userAnswer: string | null;
   readonly isCorrect: boolean | null;
   readonly answeredAt: Date | null;

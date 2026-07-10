@@ -9,6 +9,7 @@ const words: QuizWordInput[] = [
     kind: "palavra",
     definitionEn: "to talk at length",
     definitionPt: "divagar",
+    observations: [],
     contextSentences: ["Sorry, I tend to ramble."],
   },
   {
@@ -17,6 +18,7 @@ const words: QuizWordInput[] = [
     kind: "expressao",
     definitionEn: "very easy",
     definitionPt: "muito fácil",
+    observations: [],
     contextSentences: [],
   },
 ];
@@ -26,6 +28,12 @@ function item(over: Partial<AiQuizItem> = {}): AiQuizItem {
     term: "ramble",
     prompt: 'O que significa "ramble"?',
     options: ["divagar", "correr", "dormir", "comer"],
+    optionExplanations: [
+      "É o significado correto de ramble.",
+      "Correr significa run.",
+      "Dormir significa sleep.",
+      "Comer significa eat.",
+    ],
     correctIndex: 0,
     explanation: "porque ramble = divagar",
     ...over,
@@ -71,6 +79,28 @@ describe("buildAiQuizQuestions", () => {
     expect(questions[0]?.options?.[questions[0]?.correctIndex ?? -1]).toBe("dormir");
   });
 
+  it("keeps each explanation aligned with its option after reshuffling", () => {
+    const source = item({ correctIndex: 2 });
+    const expectedByOption = new Map(
+      source.options.map((option, index) => [
+        option,
+        source.optionExplanations[index],
+      ]),
+    );
+    const [question] = buildAiQuizQuestions({
+      items: [source],
+      words,
+      seed: SEED,
+    });
+
+    question?.options?.forEach((option, index) => {
+      expect(question.optionExplanations?.[index]).toBe(
+        expectedByOption.get(option),
+      );
+    });
+    expect(question?.explanation).toBe("Dormir significa sleep.");
+  });
+
   it("drops an item whose term matches no word", () => {
     const questions = buildAiQuizQuestions({
       items: [item({ term: "ghost" })],
@@ -94,15 +124,6 @@ describe("buildAiQuizQuestions", () => {
     const dup = item({ term: "piece of cake", options: ["a", "a", "b", "c"] });
     const questions = buildAiQuizQuestions({ items: [empty, dup], words, seed: SEED });
     expect(questions).toHaveLength(0);
-  });
-
-  it("normalises an empty explanation to null", () => {
-    const [q] = buildAiQuizQuestions({
-      items: [item({ explanation: "   " })],
-      words,
-      seed: SEED,
-    });
-    expect(q?.explanation).toBeNull();
   });
 
   it("is deterministic for a given seed", () => {

@@ -13,6 +13,7 @@ const baseRow: PrismaWord = {
   definitionEn: "x",
   definitionPt: "y",
   examples: JSON.stringify(["a", "b"]),
+  observations: JSON.stringify(["contexto meu"]),
   easeFactor: 2.5,
   intervalDays: 0,
   repetitions: 0,
@@ -23,6 +24,11 @@ const baseRow: PrismaWord = {
 describe("toWord — examples decoding", () => {
   it("decodes the JSON-encoded examples column into a string array", () => {
     expect(toWord(baseRow).examples).toEqual(["a", "b"]);
+  });
+
+  it("decodes observations and rejects a corrupt observations column", () => {
+    expect(toWord(baseRow).observations).toEqual(["contexto meu"]);
+    expect(() => toWord({ ...baseRow, observations: "{}" })).toThrow();
   });
 
   it("throws on a corrupt examples column (not a JSON string array)", () => {
@@ -50,6 +56,12 @@ const baseQuestionRow: PrismaExamQuestion = {
   correctAnswer: null,
   contextSentence: null,
   explanation: null,
+  optionExplanations: JSON.stringify([
+    "certa",
+    "errada 1",
+    "errada 2",
+    "errada 3",
+  ]),
   userAnswer: null,
   isCorrect: null,
   answeredAt: null,
@@ -61,6 +73,12 @@ describe("toExamQuestion — options decoding", () => {
     expect(q.options).toEqual(["divagar", "prolixo", "atalho", "meta"]);
     expect(q.type).toBe("mc_en_pt");
     expect(q.correctIndex).toBe(0);
+    expect(q.optionExplanations).toEqual([
+      "certa",
+      "errada 1",
+      "errada 2",
+      "errada 3",
+    ]);
   });
 
   it("maps a null options column (typed/cloze) to null", () => {
@@ -81,6 +99,16 @@ describe("toExamQuestion — options decoding", () => {
     ).toThrow();
     expect(() =>
       toExamQuestion({ ...baseQuestionRow, options: "[1,2]" }),
+    ).toThrow();
+  });
+
+  it("maps null legacy explanations and rejects corrupt option explanations", () => {
+    expect(
+      toExamQuestion({ ...baseQuestionRow, optionExplanations: null })
+        .optionExplanations,
+    ).toBeNull();
+    expect(() =>
+      toExamQuestion({ ...baseQuestionRow, optionExplanations: "{}" }),
     ).toThrow();
   });
 

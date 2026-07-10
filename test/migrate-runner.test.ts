@@ -302,4 +302,95 @@ describe("migration runner", () => {
     // …and the child WordSighting was NOT cascade-deleted by DROP TABLE "Word".
     expect(await countRows(dbFile, 'SELECT COUNT(*) AS n FROM "WordSighting"')).toBe(1);
   }, 60_000);
+
+  it("case 7 — adds review context fields without changing existing quiz data", async () => {
+    const dir = makeTmpDir();
+    const dbFile = path.join(dir, "quiz-upgrade.db");
+    const newMigration =
+      "20260710193000_add_option_explanations_and_word_observations";
+    const previous = path.join(dir, "previous");
+    mkdirSync(previous);
+    for (const name of REAL_MIGRATION_NAMES.filter(
+      (migration) => migration !== newMigration,
+    )) {
+      cpSync(path.join(REAL_MIGRATIONS, name), path.join(previous, name), {
+        recursive: true,
+      });
+    }
+    await runMigrations({
+      migrationsDir: previous,
+      databaseUrl: fileUrl(dbFile),
+    });
+
+    await withPrisma(dbFile, async (prisma) => {
+      const now = Date.now();
+      await prisma.$executeRawUnsafe(
+        'INSERT INTO "Word" ("id","term","termKey","definitionEn","definitionPt","examples","nextReview","createdAt") VALUES (?,?,?,?,?,?,?,?)',
+        "w1",
+        "ramble",
+        "ramble",
+        "to talk at length",
+        "divagar",
+        "[]",
+        now,
+        now,
+      );
+      await prisma.$executeRawUnsafe(
+        'INSERT INTO "Exam" ("id","type","status","promptText","score","finishedAt","createdAt") VALUES (?,?,?,?,?,?,?)',
+        "e1",
+        "vocabulario",
+        "finalizada",
+        "",
+        0,
+        now,
+        now,
+      );
+      await prisma.$executeRawUnsafe(
+        'INSERT INTO "ExamQuestion" ("id","examId","wordId","position","type","prompt","options","correctIndex","explanation","userAnswer","isCorrect","answeredAt") VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+        "q1",
+        "e1",
+        "w1",
+        0,
+        "ai_context",
+        "What does ramble mean?",
+        '["divagar","correr","dormir","comer"]',
+        0,
+        "Ramble significa divagar.",
+        "1",
+        0,
+        now,
+      );
+    });
+
+    const result = await runMigrations({
+      migrationsDir: REAL_MIGRATIONS,
+      databaseUrl: fileUrl(dbFile),
+    });
+    expect(result.applied).toEqual([newMigration]);
+
+    await withPrisma(dbFile, async (prisma) => {
+      const words = await prisma.$queryRawUnsafe<
+        Array<{ observations: string }>
+      >('SELECT "observations" FROM "Word" WHERE "id" = ?', "w1");
+      const questions = await prisma.$queryRawUnsafe<
+        Array<{
+          options: string;
+          userAnswer: string;
+          explanation: string;
+          optionExplanations: string | null;
+        }>
+      >(
+        'SELECT "options","userAnswer","explanation","optionExplanations" FROM "ExamQuestion" WHERE "id" = ?',
+        "q1",
+      );
+
+      expect(words[0]?.observations).toBe("[]");
+      expect(questions[0]).toEqual({
+        options: '["divagar","correr","dormir","comer"]',
+        userAnswer: "1",
+        explanation: "Ramble significa divagar.",
+        optionExplanations: null,
+      });
+    });
+  }, 60_000);
 });

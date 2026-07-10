@@ -14,7 +14,9 @@
  * back then). v2 carries `kind` so a round trip no longer demotes fixed
  * expressions to "palavra". v3 adds the local quiz engine: `examQuestions`
  * (default [] so v1/v2 files import unchanged) plus `Exam.finishedAt` and
- * `Exam.practiceOfId` (defaults null). {@link exportAll} always emits v3.
+ * `Exam.practiceOfId` (defaults null). v4 adds accumulated word observations
+ * and per-option quiz explanations; both default safely for older files.
+ * {@link exportAll} always emits v4.
  *
  * Scope: the `Setting` table (machine-local configuration such as the API key)
  * is deliberately OUTSIDE the backup — it is neither exported nor touched by a
@@ -47,6 +49,7 @@ const WordBackup = z.object({
   definitionEn: z.string(),
   definitionPt: z.string(),
   examples: z.array(z.string()),
+  observations: z.array(z.string()).default([]),
   easeFactor: z.number(),
   intervalDays: z.number().int(),
   repetitions: z.number().int(),
@@ -105,13 +108,20 @@ const ExamQuestionBackup = z.object({
   contextSentence: z.string().nullable(),
   // Absent in pre-ADR-009 files → imported as null.
   explanation: z.string().nullable().default(null),
+  // Absent in v1-v3 files → individual explanations were not available.
+  optionExplanations: z.array(z.string()).nullable().default(null),
   userAnswer: z.string().nullable(),
   isCorrect: z.boolean().nullable(),
   answeredAt: Iso.nullable(),
 });
 
 export const BackupSchema = z.object({
-  version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  version: z.union([
+    z.literal(1),
+    z.literal(2),
+    z.literal(3),
+    z.literal(4),
+  ]),
   sourceTypes: z.array(SourceTypeBackup),
   sources: z.array(SourceBackup),
   words: z.array(WordBackup),
@@ -147,7 +157,7 @@ export async function exportAll(prisma: PrismaClient): Promise<Backup> {
   ]);
 
   return {
-    version: 3,
+    version: 4,
     sourceTypes: sourceTypes.map((r) => ({
       id: r.id,
       name: r.name,
@@ -169,6 +179,7 @@ export async function exportAll(prisma: PrismaClient): Promise<Backup> {
       definitionEn: r.definitionEn,
       definitionPt: r.definitionPt,
       examples: z.array(z.string()).parse(JSON.parse(r.examples)),
+      observations: z.array(z.string()).parse(JSON.parse(r.observations)),
       easeFactor: r.easeFactor,
       intervalDays: r.intervalDays,
       repetitions: r.repetitions,
@@ -227,6 +238,9 @@ export async function exportAll(prisma: PrismaClient): Promise<Backup> {
       correctAnswer: r.correctAnswer,
       contextSentence: r.contextSentence,
       explanation: r.explanation,
+      optionExplanations: r.optionExplanations
+        ? z.array(z.string()).parse(JSON.parse(r.optionExplanations))
+        : null,
       userAnswer: r.userAnswer,
       isCorrect: r.isCorrect,
       answeredAt: r.answeredAt ? r.answeredAt.toISOString() : null,
@@ -275,6 +289,7 @@ async function insertAll(
         definitionEn: w.definitionEn,
         definitionPt: w.definitionPt,
         examples: JSON.stringify(w.examples),
+        observations: JSON.stringify(w.observations),
         easeFactor: w.easeFactor,
         intervalDays: w.intervalDays,
         repetitions: w.repetitions,
@@ -362,6 +377,10 @@ async function insertAll(
         correctAnswer: q.correctAnswer,
         contextSentence: q.contextSentence,
         explanation: q.explanation,
+        optionExplanations:
+          q.optionExplanations === null
+            ? null
+            : JSON.stringify(q.optionExplanations),
         userAnswer: q.userAnswer,
         isCorrect: q.isCorrect,
         answeredAt: q.answeredAt ? new Date(q.answeredAt) : null,

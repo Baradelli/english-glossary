@@ -19,6 +19,8 @@ export interface QuizWordInput {
   readonly kind: WordKind;
   readonly definitionEn: string;
   readonly definitionPt: string;
+  /** Student-added context that can inform future questions. */
+  readonly observations: readonly string[];
   /** Real sentences from sources (WordSighting) — grounds the AI questions. */
   readonly contextSentences: readonly string[];
 }
@@ -31,6 +33,8 @@ export interface QuizQuestion {
   readonly prompt: string;
   /** The four multiple-choice alternatives. */
   readonly options: string[] | null;
+  /** Explanations paired with the alternatives after reshuffling. */
+  readonly optionExplanations: string[] | null;
   /** Index of the correct alternative. */
   readonly correctIndex: number | null;
   /** Expected text — always null for multiple choice. */
@@ -91,23 +95,25 @@ export function buildAiQuizQuestions(input: BuildAiQuizInput): QuizQuestion[] {
     const word = wordByTerm.get(normalizeTerm(item.term));
     if (!word || used.has(word.id)) continue;
     if (!hasHonestOptions(item)) continue;
-    const correct = item.options[item.correctIndex];
+    const pairs = item.options.map((option, index) => ({
+      option,
+      explanation: item.optionExplanations[index] ?? "",
+    }));
+    const correct = pairs[item.correctIndex];
     if (correct === undefined) continue;
 
     used.add(word.id);
-    const options = shuffle(item.options, rng);
+    const shuffled = shuffle(pairs, rng);
     drafts.push({
       wordId: word.id,
       type: "ai_context",
       prompt: item.prompt,
-      options,
-      correctIndex: options.indexOf(correct),
+      options: shuffled.map((pair) => pair.option),
+      optionExplanations: shuffled.map((pair) => pair.explanation),
+      correctIndex: shuffled.indexOf(correct),
       correctAnswer: null,
       contextSentence: word.contextSentences[0] ?? null,
-      explanation:
-        item.explanation && item.explanation.trim().length > 0
-          ? item.explanation.trim()
-          : null,
+      explanation: correct.explanation,
     });
   }
 

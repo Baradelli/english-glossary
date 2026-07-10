@@ -35,6 +35,7 @@ describe("PrismaWordRepository — create", () => {
     const word = await repo.create(newWord());
     expect(word.id).toBeTruthy();
     expect(word.examples).toEqual(["He started to ramble.", "I tend to ramble."]);
+    expect(word.observations).toEqual([]);
   });
 
   it("starts a new word at the initial SRS state (ease 2.5, interval 0, reps 0)", async () => {
@@ -156,3 +157,24 @@ describe("PrismaWordRepository — update", () => {
   });
 });
 
+describe("PrismaWordRepository — appendObservation", () => {
+  it("appends observations in order without changing definitions or SRS", async () => {
+    const word = await repo.create(newWord({ kind: "expressao" }));
+
+    await repo.appendObservation(word.id, "Usado em contextos informais.");
+    const updated = await repo.appendObservation(
+      word.id,
+      "Pode soar negativo quando a fala é longa.",
+    );
+
+    expect(updated.observations).toEqual([
+      "Usado em contextos informais.",
+      "Pode soar negativo quando a fala é longa.",
+    ]);
+    expect(updated.definitionEn).toBe(word.definitionEn);
+    expect(updated.repetitions).toBe(word.repetitions);
+    expect((await repo.findById(word.id))?.observations).toEqual(
+      updated.observations,
+    );
+  });
+});

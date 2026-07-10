@@ -5,6 +5,12 @@ const validItem = {
   term: "ramble",
   prompt: 'Em qual frase "ramble" é usado corretamente?',
   options: ["frase A", "frase B", "frase C", "frase D"],
+  optionExplanations: [
+    "A frase A não usa o termo no sentido correto.",
+    "A frase B tem uma combinação pouco natural.",
+    "A frase C usa o termo corretamente.",
+    "A frase D confunde o termo com outro significado.",
+  ],
   correctIndex: 2,
 };
 
@@ -15,6 +21,7 @@ describe("parseAiQuiz", () => {
     if (result.ok) {
       expect(result.value.items).toHaveLength(1);
       expect(result.value.items[0]?.correctIndex).toBe(2);
+      expect(result.value.items[0]?.optionExplanations).toHaveLength(4);
     }
   });
 
@@ -51,6 +58,23 @@ describe("parseAiQuiz", () => {
     const five = { items: [{ ...validItem, options: ["a", "b", "c", "d", "e"] }] };
     expect(parseAiQuiz(JSON.stringify(three)).ok).toBe(false);
     expect(parseAiQuiz(JSON.stringify(five)).ok).toBe(false);
+  });
+
+  it("requires one non-empty explanation for each option", () => {
+    const missing = { ...validItem } as Record<string, unknown>;
+    delete missing["optionExplanations"];
+    const three = {
+      ...validItem,
+      optionExplanations: ["A", "B", "C"],
+    };
+    const blank = {
+      ...validItem,
+      optionExplanations: ["A", "B", "   ", "D"],
+    };
+
+    expect(parseAiQuiz(JSON.stringify({ items: [missing] })).ok).toBe(false);
+    expect(parseAiQuiz(JSON.stringify({ items: [three] })).ok).toBe(false);
+    expect(parseAiQuiz(JSON.stringify({ items: [blank] })).ok).toBe(false);
   });
 
   it("rejects a correctIndex outside 0..3 or non-integer", () => {

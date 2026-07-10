@@ -11,7 +11,7 @@ e comprove em provas de múltipla escolha geradas por IA — offline, com seus d
 ![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![Electron](https://img.shields.io/badge/Electron-43-47848F?logo=electron&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-391%20passing-3fb950)
+![Tests](https://img.shields.io/badge/tests-passing-3fb950)
 ![Offline](https://img.shields.io/badge/offline-first-1d4ed8)
 
 </div>
@@ -77,8 +77,10 @@ Depois de instalar, o fluxo do dia a dia é:
    sem ela, você copia um prompt pronto para colar em qualquer IA e traz a resposta de volta.
 3. **Faça provas** em **Provas**: gere uma **revisão semanal** (o que você capturou nos últimos 7
    dias) ou uma **prova de vocabulário** (amostra ponderada, que favorece as palavras difíceis). A
-   IA escreve as questões de múltipla escolha e o app corrige na hora, mostrando a explicação de
-   cada resposta. Errou algumas? Um clique gera uma **prática só dos erros**.
+   IA escreve as questões de múltipla escolha e o app corrige na hora. Ao finalizar, cada questão
+   pode ser expandida para explicar por que **cada alternativa** está certa ou errada; dali você
+   também pode guardar uma observação editável no verbete. Errou algumas? Um clique gera uma
+   **prática só dos erros**.
 4. **Acompanhe a evolução** no **Painel**: sequência de dias de estudo (streak), calendário de
    atividade, previsão de revisões dos próximos 7 dias, crescimento do vocabulário, tendência das
    notas e as palavras em que você mais erra.
@@ -95,9 +97,13 @@ Depois de instalar, o fluxo do dia a dia é:
   alimentado ao responder provas; o estado da palavra (nova / aprendendo / dominada) é **derivado**
   dos campos SRS, nunca uma coluna.
 - **Provas de múltipla escolha geradas por IA.** O app escolhe os verbetes; a IA escreve as
-  questões (com explicação); o app valida o JSON, embaralha as alternativas e **corrige localmente**.
-  Prova retomável, nota computada pelo app e prática só dos erros. A **prova de compreensão de uma
-  fonte** mantém o ciclo manual de copiar/colar com IA (com transcrição opcional).
+  questões (com uma justificativa por alternativa); o app valida o JSON, embaralha cada par
+  alternativa + justificativa e **corrige localmente**. A revisão final é expansível, a prova é
+  retomável, a nota é computada pelo app e a prática cobre só os erros. A **prova de compreensão de
+  uma fonte** mantém o ciclo manual de copiar/colar com IA (com transcrição opcional).
+- **Observações acumuladas no glossário.** Palavras e expressões recebem contexto incremental,
+  inclusive a partir da revisão de provas; esse material passa a enriquecer prompts futuros e faz
+  parte do backup.
 - **Painel com dashboards.** Faixa "hoje", heatmap de atividade, previsão de 7 dias, crescimento do
   vocabulário, tendência de notas e ranking de palavras difíceis (Recharts), tema claro/escuro, e
   export/backup do banco em JSON.
@@ -192,7 +198,7 @@ prisma/          schema + migrations
 
 ## ✅ Testes
 
-TDD: teste primeiro, ver falhar, implementar. **391 testes** (Vitest) com cobertura de **~99,8% de
+TDD: teste primeiro, ver falhar, implementar. A suíte Vitest mantém cobertura de **~99,8% de
 statements/lines** e **100% de functions** no domínio + aplicação + infra. As poucas ramificações
 não cobertas são guards defensivos para estados que as foreign keys (`onDelete: Cascade`) tornam
 impossíveis.

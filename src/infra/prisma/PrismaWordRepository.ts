@@ -65,6 +65,18 @@ export class PrismaWordRepository implements WordRepository {
     return toWord(row);
   }
 
+  async appendObservation(id: string, observation: string): Promise<Word> {
+    const row = await this.prisma.$transaction(async (tx) => {
+      const current = await tx.word.findUniqueOrThrow({ where: { id } });
+      const observations = [...toWord(current).observations, observation];
+      return tx.word.update({
+        where: { id },
+        data: { observations: JSON.stringify(observations) },
+      });
+    });
+    return toWord(row);
+  }
+
   async updateSrs(id: string, srs: SrsUpdate): Promise<Word> {
     const row = await this.prisma.word.update({
       where: { id },

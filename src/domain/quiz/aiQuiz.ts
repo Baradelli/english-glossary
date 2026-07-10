@@ -19,12 +19,23 @@ export const AiQuizItemSchema = z.object({
   options: z
     .array(z.string())
     .length(4, "options deve ter exatamente 4 alternativas"),
+  optionExplanations: z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(1, "cada explicação de alternativa deve ser preenchida"),
+    )
+    .length(
+      4,
+      "optionExplanations deve ter exatamente 4 explicações",
+    ),
   correctIndex: z
     .number()
     .int("correctIndex deve ser um inteiro")
     .min(0, "correctIndex deve ser >= 0")
     .max(3, "correctIndex deve ser <= 3"),
-  // Older enrichment-era replies had no explanation; keep it optional.
+  // Kept for parser compatibility; new prompts use optionExplanations.
   explanation: z.string().nullable().default(null),
 });
 

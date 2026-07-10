@@ -18,6 +18,9 @@ const ramble: PromptWord = {
   definitionPt: "divagar",
   examples: ["He started to ramble about his childhood."],
   contextSentences: ["Sorry, I tend to ramble when I'm nervous."],
+  observations: [
+    "Pode soar negativo quando a pessoa fala por tempo demais.",
+  ],
 };
 
 // §1 decision: flexed forms are distinct entries, never lemmatised.
@@ -94,7 +97,7 @@ describe("buildQuizGenerationPrompt (AI quiz generation — one-turn JSON)", () 
     expect(prompt).toContain("múltipla escolha");
   });
 
-  it("ends with the strict AiQuiz JSON schema instruction incl. explanation", () => {
+  it("ends with the strict AiQuiz JSON schema instruction incl. option explanations", () => {
     const prompt = buildQuizGenerationPrompt(words);
     expect(prompt.endsWith(AI_QUIZ_JSON_SCHEMA_INSTRUCTION)).toBe(true);
     for (const key of [
@@ -103,10 +106,16 @@ describe("buildQuizGenerationPrompt (AI quiz generation — one-turn JSON)", () 
       "prompt",
       "options",
       "correctIndex",
-      "explanation",
+      "optionExplanations",
     ]) {
       expect(prompt).toContain(`"${key}"`);
     }
+  });
+
+  it("requires a short position-independent reason for every alternative", () => {
+    const prompt = buildQuizGenerationPrompt(words);
+    expect(prompt).toContain("uma justificativa curta para cada alternativa");
+    expect(prompt).toContain("não mencione letras, números ou posições");
   });
 
   it("does not use the two-turn present-exam instruction", () => {
@@ -185,5 +194,19 @@ describe("purity", () => {
     buildSourceComprehensionPrompt({ source: { name: "x" }, words: input });
     buildQuizGenerationPrompt(input);
     expect(input).toEqual(snapshot);
+  });
+});
+
+describe("student observations", () => {
+  it("includes accumulated observations in quiz and comprehension prompts", () => {
+    expect(buildQuizGenerationPrompt(words)).toContain(
+      "Pode soar negativo quando a pessoa fala por tempo demais.",
+    );
+    expect(
+      buildSourceComprehensionPrompt({
+        source: { name: "Fireship" },
+        words,
+      }),
+    ).toContain("Pode soar negativo quando a pessoa fala por tempo demais.");
   });
 });

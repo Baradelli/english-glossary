@@ -23,6 +23,8 @@ export interface PromptWord {
   readonly examples?: readonly string[];
   /** Real sentences from sources where the word appeared (WordSighting). */
   readonly contextSentences?: readonly string[];
+  /** Context accumulated by the student while studying. */
+  readonly observations?: readonly string[];
 }
 
 export interface SourceComprehensionInput {
@@ -139,6 +141,9 @@ function formatWordEntry(word: PromptWord): string {
   for (const sentence of word.contextSentences ?? []) {
     lines.push(`  - contexto real: ${sentence}`);
   }
+  for (const observation of word.observations ?? []) {
+    lines.push(`  - observação do estudante: ${observation}`);
+  }
   return lines.join("\n");
 }
 
@@ -194,8 +199,8 @@ export const AI_QUIZ_JSON_SCHEMA_INSTRUCTION = `Responda ESTRITAMENTE neste form
       "term": "string",
       "prompt": "string",
       "options": ["string", "string", "string", "string"],
-      "correctIndex": 0,
-      "explanation": "string"
+      "optionExplanations": ["string", "string", "string", "string"],
+      "correctIndex": 0
     }
   ]
 }
@@ -204,8 +209,9 @@ Regras do JSON:
 - "items": exatamente uma questão por termo enviado; "term" deve casar EXATAMENTE com o termo enviado (mesma grafia).
 - "prompt": o enunciado completo da questão. Instruções em português; o conteúdo sendo testado (frases, palavras) em inglês.
 - "options": exatamente 4 alternativas, todas diferentes entre si e nenhuma vazia.
+- "optionExplanations": exatamente 4 textos, alinhados pelo índice com "options"; escreva uma justificativa curta para cada alternativa, dizendo por que ela está certa ou errada. Como o app embaralha as opções depois, não mencione letras, números ou posições.
 - "correctIndex": inteiro de 0 a 3, o índice da ÚNICA alternativa correta em "options".
-- "explanation": 1–2 frases em português explicando por que a alternativa correta é a certa (e, se ajudar, por que as erradas enganam). É o que o estudante lê depois de responder.`;
+- Cada justificativa deve ser uma frase curta em português para manter a prova objetiva.`;
 
 /**
  * Quiz generation (ADR-009) — the AI writes the WHOLE quiz: one multiple-

@@ -94,6 +94,11 @@ export interface EditWordInput {
   readonly examples: string[];
 }
 
+export interface AddWordObservationInput {
+  readonly wordId: string;
+  readonly text: string;
+}
+
 export interface EditSightingInput {
   readonly contextSentence?: string | null;
   readonly definitionEn?: string | null;
