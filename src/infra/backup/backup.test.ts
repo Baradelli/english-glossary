@@ -106,9 +106,10 @@ beforeEach(resetDb);
 describe("backup — exportAll", () => {
   it("dumps an empty database as empty arrays with a version", async () => {
     const dump = await exportAll(prisma);
-    expect(dump.version).toBe(2);
+    expect(dump.version).toBe(3);
     expect(dump.words).toEqual([]);
     expect(dump.exams).toEqual([]);
+    expect(dump.examQuestions).toEqual([]);
   });
 
   it("exports an uncorrected exam with a null resultJson", async () => {
@@ -197,16 +198,16 @@ describe("backup — v1 compatibility (import defaults kind)", () => {
     await importAll(prisma, v1);
     const stored = await prisma.word.findUnique({ where: { id: "w1" } });
     expect(stored?.kind).toBe("palavra");
-    // And the re-export tags the whole file as v2 going forward.
-    expect((await exportAll(prisma)).version).toBe(2);
+    // And the re-export tags the whole file as v3 going forward.
+    expect((await exportAll(prisma)).version).toBe(3);
   });
 });
 
 describe("backup — replaceAll (restore = wipe + import, transactional)", () => {
-  it("round trips v2, preserving kind, and wipes prior data", async () => {
+  it("round trips the current version, preserving kind, and wipes prior data", async () => {
     await seed();
     const before = await exportAll(prisma);
-    expect(before.version).toBe(2);
+    expect(before.version).toBe(3);
     expect(before.words.some((w) => w.kind === "expressao")).toBe(true);
 
     // Simulate writing to a file and reading it back.
@@ -306,6 +307,7 @@ describe("backup — replaceAll (restore = wipe + import, transactional)", () =>
       reviewLogs: [],
       exams: [],
       examWords: [],
+      examQuestions: [],
     };
     expect(BackupSchema.safeParse(broken).success).toBe(true);
 
@@ -322,5 +324,147 @@ describe("backup — replaceAll (restore = wipe + import, transactional)", () =>
     expect(await prisma.wordSighting.count()).toBe(sightingsBefore);
     expect(await prisma.source.count()).toBe(sourcesBefore);
     expect(await prisma.exam.count()).toBe(examsBefore);
+  });
+});
+
+describe("backup — v3 (quiz engine: questions + practice link)", () => {
+  /** Seeds a finished quiz, its answered questions and a practice quiz. */
+  async function seedQuiz(): Promise<{ originId: string; practiceId: string }> {
+    const ramble = await words.create({
+      term: "ramble",
+      definitionEn: "to talk at length",
+      definitionPt: "divagar",
+      examples: [],
+      nextReview: NOW,
+    });
+    const origin = await exams.createQuiz({
+      type: "vocabulario",
+      createdAt: NOW,
+      questions: [
+        {
+          wordId: ramble.id,
+          position: 0,
+          type: "mc_en_pt",
+          prompt: 'Qual é o significado de "ramble"?',
+          options: ["divagar", "prolixo", "atalho", "meta"],
+          correctIndex: 0,
+          correctAnswer: null,
+          contextSentence: null,
+          explanation: null,
+        },
+      ],
+    });
+    const [question] = await exams.listQuestions(origin.id);
+    await exams.answerQuestion(question!.id, {
+      userAnswer: "prolixo",
+      isCorrect: false,
+      answeredAt: NOW,
+    });
+    await exams.finishQuiz(origin.id, {
+      score: 0,
+      finishedAt: LATER,
+      words: [
+        {
+          wordId: ramble.id,
+          correct: false,
+          srs: { easeFactor: 2.5, intervalDays: 1, repetitions: 0, nextReview: LATER },
+          reviewLog: { quality: 2, reviewedAt: NOW },
+        },
+      ],
+    });
+    const practice = await exams.createQuiz({
+      type: "pratica",
+      practiceOfId: origin.id,
+      createdAt: LATER,
+      questions: [
+        {
+          wordId: ramble.id,
+          position: 0,
+          type: "typed",
+          prompt: "Digite o termo em inglês para: divagar",
+          options: null,
+          correctIndex: null,
+          correctAnswer: "ramble",
+          contextSentence: "Sorry, I ramble.",
+          explanation: null,
+        },
+      ],
+    });
+    return { originId: origin.id, practiceId: practice.id };
+  }
+
+  it("round trips a v3 backup with questions and the practice self-link", async () => {
+    const { originId, practiceId } = await seedQuiz();
+    const before = await exportAll(prisma);
+    expect(before.version).toBe(3);
+    expect(before.examQuestions).toHaveLength(2);
+    expect(
+      before.exams.find((e) => e.id === practiceId)?.practiceOfId,
+    ).toBe(originId);
+    expect(before.exams.find((e) => e.id === originId)?.finishedAt).toBe(
+      LATER.toISOString(),
+    );
+
+    // Simulate writing to a file and reading it back — with the practice exam
+    // listed BEFORE its origin, so the import must survive the self-FK order.
+    const onDisk = JSON.parse(JSON.stringify(before)) as Backup;
+    onDisk.exams = [...onDisk.exams].reverse();
+
+    await resetDb();
+    await importAll(prisma, onDisk);
+
+    const after = await exportAll(prisma);
+    expect(after.examQuestions).toHaveLength(2);
+    const answered = after.examQuestions.find((q) => q.userAnswer !== null);
+    expect(answered?.userAnswer).toBe("prolixo");
+    expect(answered?.isCorrect).toBe(false);
+    expect(answered?.options).toEqual(["divagar", "prolixo", "atalho", "meta"]);
+    expect(after.exams.find((e) => e.id === practiceId)?.practiceOfId).toBe(
+      originId,
+    );
+    expect(after.exams.find((e) => e.id === originId)?.finishedAt).toBe(
+      LATER.toISOString(),
+    );
+  });
+
+  it("replaceAll wipes exam questions before re-inserting", async () => {
+    await seedQuiz();
+    const onDisk: unknown = JSON.parse(JSON.stringify(await exportAll(prisma)));
+
+    const result = await replaceAll(prisma, onDisk);
+    expect(result.ok).toBe(true);
+    expect(await prisma.examQuestion.count()).toBe(2);
+  });
+
+  it("imports a v2 file (no examQuestions/finishedAt/practiceOfId) with defaults", async () => {
+    const v2 = {
+      version: 2,
+      sourceTypes: [],
+      sources: [],
+      words: [],
+      wordSightings: [],
+      reviewLogs: [],
+      exams: [
+        {
+          id: "e1",
+          type: "semanal",
+          sourceId: null,
+          status: "gerada",
+          promptText: "p",
+          answersText: null,
+          correctionPrompt: null,
+          resultJson: null,
+          score: null,
+          createdAt: NOW.toISOString(),
+        },
+      ],
+      examWords: [],
+    };
+    await importAll(prisma, v2);
+
+    const stored = await prisma.exam.findUnique({ where: { id: "e1" } });
+    expect(stored?.finishedAt).toBeNull();
+    expect(stored?.practiceOfId).toBeNull();
+    expect(await prisma.examQuestion.count()).toBe(0);
   });
 });

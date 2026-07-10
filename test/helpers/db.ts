@@ -19,6 +19,7 @@ export async function resetDb(): Promise<void> {
   }
   const db = getTestPrisma();
   await db.setting.deleteMany();
+  await db.examQuestion.deleteMany();
   await db.examWord.deleteMany();
   await db.reviewLog.deleteMany();
   await db.wordSighting.deleteMany();

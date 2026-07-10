@@ -1,7 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import type { Word, WordSighting } from "../../domain/model.js";
 import type {
-  ApplyReviewInput,
   FirstSighting,
   NewWord,
   SrsUpdate,
@@ -66,14 +65,6 @@ export class PrismaWordRepository implements WordRepository {
     return toWord(row);
   }
 
-  async listDueForReview(now: Date): Promise<Word[]> {
-    const rows = await this.prisma.word.findMany({
-      where: { nextReview: { lte: now } },
-      orderBy: { nextReview: "asc" },
-    });
-    return rows.map(toWord);
-  }
-
   async updateSrs(id: string, srs: SrsUpdate): Promise<Word> {
     const row = await this.prisma.word.update({
       where: { id },
@@ -83,30 +74,6 @@ export class PrismaWordRepository implements WordRepository {
         repetitions: srs.repetitions,
         nextReview: srs.nextReview,
       },
-    });
-    return toWord(row);
-  }
-
-  async applyReview(input: ApplyReviewInput): Promise<Word> {
-    const row = await this.prisma.$transaction(async (tx) => {
-      const word = await tx.word.update({
-        where: { id: input.wordId },
-        data: {
-          easeFactor: input.srs.easeFactor,
-          intervalDays: input.srs.intervalDays,
-          repetitions: input.srs.repetitions,
-          nextReview: input.srs.nextReview,
-        },
-      });
-      await tx.reviewLog.create({
-        data: {
-          wordId: input.wordId,
-          quality: input.reviewLog.quality,
-          reviewedAt: input.reviewLog.reviewedAt,
-          intervalDays: input.srs.intervalDays,
-        },
-      });
-      return word;
     });
     return toWord(row);
   }

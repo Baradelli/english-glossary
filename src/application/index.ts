@@ -6,7 +6,7 @@ export * from "./words.js";
 export * from "./sourceDetail.js";
 export * from "./sighting.js";
 export * from "./exam.js";
-export * from "./review.js";
+export * from "./quiz.js";
 export * from "./dashboard.js";
 export * from "./define.js";
 export * from "./settings.js";

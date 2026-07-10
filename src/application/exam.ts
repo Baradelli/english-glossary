@@ -9,8 +9,6 @@
 import {
   buildCorrectionPrompt,
   buildSourceComprehensionPrompt,
-  buildVocabularyExamPrompt,
-  buildWeeklyReviewPrompt,
   parseExamResult,
   reviewWord,
   type AiProvider,
@@ -23,8 +21,6 @@ import {
   type WordRepository,
   type WordSightingRepository,
 } from "../domain/index.js";
-
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** Maps a graded answer to an SM-2 quality: pass = 5, fail = 2 (forces reset). */
 export function srsQualityForAnswer(correct: boolean): number {
@@ -50,34 +46,6 @@ async function resolveWords(
     if (word) resolved.push(word);
   }
   return resolved;
-}
-
-export async function generateWeeklyReviewExam(
-  deps: { words: WordRepository; exams: ExamRepository },
-  now: Date,
-): Promise<Exam> {
-  const since = now.getTime() - WEEK_MS;
-  const recent = (await deps.words.listAll()).filter(
-    (word) => word.createdAt.getTime() >= since,
-  );
-  if (recent.length === 0) {
-    throw new Error("Nenhuma palavra na última semana para revisar.");
-  }
-  const promptText = buildWeeklyReviewPrompt(recent.map(toPromptWord));
-  return deps.exams.create({ type: "semanal", promptText });
-}
-
-export async function generateVocabularyExam(
-  deps: { words: WordRepository; exams: ExamRepository },
-  wordIds: readonly string[],
-  _now: Date,
-): Promise<Exam> {
-  const words = await resolveWords(deps.words, wordIds);
-  if (words.length === 0) {
-    throw new Error("Selecione ao menos uma palavra para a prova.");
-  }
-  const promptText = buildVocabularyExamPrompt(words.map(toPromptWord));
-  return deps.exams.create({ type: "vocabulario", promptText });
 }
 
 export async function generateSourceComprehensionExam(

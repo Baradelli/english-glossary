@@ -44,23 +44,25 @@ const TOUR_STEPS: DriveStep[] = [
     },
   },
   {
-    element: '[data-tour="nav-review"]',
+    element: '[data-tour="nav-exams"]',
     popover: {
-      title: "3. Revisão",
+      title: "3. Provas",
       description:
-        "A repetição espaçada (SM-2) monta sua fila diária. Avalie o quanto lembra " +
-        "de cada palavra e o sistema agenda a próxima revisão.",
+        "Gere provas de múltipla escolha a partir do seu vocabulário ou de uma " +
+        "fonte: a IA cria as questões, o app corrige e atualiza sua repetição " +
+        "espaçada (SM-2).",
       side: "bottom",
       align: "start",
     },
   },
   {
-    element: '[data-tour="nav-exams"]',
+    element: '[data-tour="today"]',
     popover: {
-      title: "4. Provas",
+      title: "Seu dia de estudo",
       description:
-        "Gere provas a partir do seu vocabulário ou de uma fonte, responda e " +
-        "receba correção com nota.",
+        "Esta faixa resume seu dia: sequência de dias de estudo, revisões que " +
+        "vencem hoje e o atalho para fazer uma prova — os números aparecem assim " +
+        "que você capturar as primeiras palavras.",
       side: "bottom",
       align: "start",
     },
@@ -70,19 +72,8 @@ const TOUR_STEPS: DriveStep[] = [
     popover: {
       title: "Seu progresso",
       description:
-        "O Painel resume tudo: palavras por estado, fontes cadastradas, revisões " +
-        "dos últimos 7 dias e o resultado das provas.",
-      side: "top",
-      align: "start",
-    },
-  },
-  {
-    element: '[data-tour="backup"]',
-    popover: {
-      title: "Backup",
-      description:
-        "Exporte todos os seus dados em um arquivo JSON quando quiser. Guarde-o " +
-        "em local seguro — dá para restaurar em Configurações.",
+        "O Painel mostra sua atividade diária no calendário, a agenda de revisões " +
+        "da semana, o crescimento do vocabulário e as palavras em que você mais erra.",
       side: "top",
       align: "start",
     },

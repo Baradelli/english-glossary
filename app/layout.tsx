@@ -54,13 +54,6 @@ export default async function RootLayout({
               Fontes
             </Link>
             <Link
-              href="/review"
-              data-tour="nav-review"
-              className="text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-            >
-              Revisão
-            </Link>
-            <Link
               href="/exams"
               data-tour="nav-exams"
               className="text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"

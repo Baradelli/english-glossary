@@ -66,4 +66,20 @@ export class PrismaWordSightingRepository implements WordSightingRepository {
     });
     return rows.map(toWordSighting);
   }
+
+  async listSince(date: Date): Promise<WordSighting[]> {
+    const rows = await this.prisma.wordSighting.findMany({
+      where: { seenAt: { gte: date } },
+      orderBy: { seenAt: "asc" },
+    });
+    return rows.map(toWordSighting);
+  }
+
+  async listSeenDates(): Promise<Date[]> {
+    const rows = await this.prisma.wordSighting.findMany({
+      select: { seenAt: true },
+      orderBy: { seenAt: "asc" },
+    });
+    return rows.map((row) => row.seenAt);
+  }
 }

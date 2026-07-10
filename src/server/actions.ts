@@ -15,20 +15,22 @@ import {
   type WordKind,
 } from "../domain/index.js";
 import {
+  answerQuizQuestion,
   autoCorrectExam,
   captureInSource,
   defineWord,
   deleteSource,
   ensureSource,
   ensureSourceType,
+  finishQuiz,
   generateSourceComprehensionExam,
-  generateVocabularyExam,
-  generateWeeklyReviewExam,
   getEffectiveAiConfig,
   markOnboardingSeen,
   resetOnboarding,
-  reviewWordById,
   saveAiSettings,
+  startPracticeQuiz,
+  startVocabularyQuiz,
+  startWeeklyQuiz,
   saveTheme,
   submitExamAnswers,
   submitExamCorrection,
@@ -43,7 +45,7 @@ import { prisma } from "../infra/prisma/client.js";
 import {
   captureDeps,
   examComprehensionDeps,
-  examGenDeps,
+  quizDeps,
   repos,
 } from "./container.js";
 import { getAiProvider } from "./ai.js";
@@ -279,25 +281,16 @@ export async function defineWordAction(
   }
 }
 
-// ── Fluxo C: exam cycle ────────────────────────────────────────────────────
+// ── Fluxo C: AI-generated quiz (ADR-009) ────────────────────────────────────
 
-export async function generateWeeklyExamAction(): Promise<FormState> {
+/** Opens (or resumes) the weekly quiz and points the client at it. */
+export async function startWeeklyQuizAction(): Promise<FormState> {
   let id: string;
   try {
-    id = (await generateWeeklyReviewExam(examGenDeps, new Date())).id;
-  } catch (error) {
-    return { error: errorMessage(error) };
-  }
-  return { ok: true, redirectTo: `/exams/${id}` };
-}
-
-export async function generateVocabularyExamAction(): Promise<FormState> {
-  let id: string;
-  try {
-    const words = await repos.words.listAll();
-    const exam = await generateVocabularyExam(
-      examGenDeps,
-      words.map((w) => w.id),
+    const ai = await getAiProvider();
+    const exam = await startWeeklyQuiz(
+      quizDeps,
+      { seed: Date.now(), ai },
       new Date(),
     );
     id = exam.id;
@@ -306,6 +299,97 @@ export async function generateVocabularyExamAction(): Promise<FormState> {
   }
   return { ok: true, redirectTo: `/exams/${id}` };
 }
+
+/** Opens (or resumes) the vocabulary quiz and points the client at it. */
+export async function startVocabularyQuizAction(): Promise<FormState> {
+  let id: string;
+  try {
+    const ai = await getAiProvider();
+    const exam = await startVocabularyQuiz(
+      quizDeps,
+      { seed: Date.now(), ai },
+      new Date(),
+    );
+    id = exam.id;
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
+  return { ok: true, redirectTo: `/exams/${id}` };
+}
+
+/** Opens a practice quiz over the mistakes of a finished quiz. */
+export async function startPracticeQuizAction(
+  formData: FormData,
+): Promise<FormState> {
+  const examId = field(formData, "examId");
+  if (!examId) return { error: "Prova ausente." };
+  let id: string;
+  try {
+    const ai = await getAiProvider();
+    const exam = await startPracticeQuiz(
+      quizDeps,
+      examId,
+      { seed: Date.now(), ai },
+      new Date(),
+    );
+    id = exam.id;
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
+  return { ok: true, redirectTo: `/exams/${id}` };
+}
+
+/** Post-answer feedback: what the client learns only AFTER answering. */
+export interface AnswerQuestionState {
+  readonly ok?: boolean;
+  readonly error?: string;
+  readonly isCorrect?: boolean;
+  readonly correctAnswer?: string;
+  readonly contextSentence?: string | null;
+  /** Short PT explanation of the correct answer (AI questions). */
+  readonly explanation?: string | null;
+  /** Questions answered so far / total, for the progress bar. */
+  readonly answered?: number;
+  readonly total?: number;
+}
+
+/** Grades one quiz answer server-side and returns the rich feedback state. */
+export async function answerQuestionAction(
+  formData: FormData,
+): Promise<AnswerQuestionState> {
+  const examId = field(formData, "examId");
+  const questionId = field(formData, "questionId");
+  const answer = field(formData, "answer");
+  if (!examId || !questionId) return { error: "Questão ausente." };
+  try {
+    const feedback = await answerQuizQuestion(
+      quizDeps,
+      { examId, questionId, answer },
+      new Date(),
+    );
+    return { ok: true, ...feedback };
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
+}
+
+/** Closes a quiz: computes the score and applies SRS + logs atomically. */
+export async function finishQuizAction(
+  formData: FormData,
+): Promise<FormState> {
+  const examId = field(formData, "examId");
+  if (!examId) return { error: "Prova ausente." };
+  try {
+    await finishQuiz(quizDeps, examId, new Date());
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
+  revalidatePath("/exams");
+  revalidatePath(`/exams/${examId}`);
+  return { ok: true, message: "Prova finalizada e SRS atualizado." };
+}
+
+// ── Fluxo C: legacy copy-paste exam cycle (comprehension) ───────────────────
 
 export async function generateComprehensionExamAction(
   formData: FormData,
@@ -363,22 +447,6 @@ export async function submitCorrectionAction(
     ? ` Termos ignorados (sem correspondência): ${result.unmatchedTerms.join(", ")}.`
     : "";
   return { ok: true, message: `Correção aplicada e SRS atualizado.${ignored}` };
-}
-
-// ── Fluxo B: review ────────────────────────────────────────────────────────
-
-export async function reviewWordAction(
-  formData: FormData,
-): Promise<FormState> {
-  const wordId = field(formData, "wordId");
-  const quality = Number.parseInt(field(formData, "quality"), 10);
-  try {
-    await reviewWordById({ words: repos.words }, { wordId, quality }, new Date());
-  } catch (error) {
-    return { error: errorMessage(error) };
-  }
-  revalidatePath("/review");
-  return { ok: true };
 }
 
 // ── Fluxo C (opt-in): auto-correct via the API adapter (ADR-001) ────────────

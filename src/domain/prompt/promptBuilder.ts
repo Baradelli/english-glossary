@@ -1,11 +1,13 @@
 /**
  * PromptBuilder — pure functions that assemble the study prompts (§6.2).
  *
- * Exams run in TWO TURNS. Turn 1: a question prompt asks the AI to *present* an
- * exam (the three templates) — no JSON. You answer in the chat and paste the
+ * Comprehension exams run in TWO TURNS. Turn 1: a question prompt asks the AI
+ * to *present* an exam — no JSON. You answer in the chat and paste the
  * exam-and-answers back. Turn 2: {@link buildCorrectionPrompt} asks the AI to
  * grade those answers and reply strictly in the correction JSON schema (the
- * textual twin of the Zod schema in the ExamResult module).
+ * textual twin of the Zod schema in the ExamResult module). The weekly and
+ * vocabulary templates were retired by the in-app quiz (ADR-007); only the
+ * one-turn quiz-generation prompt below (ADR-009) touches the quiz flow.
  *
  * No I/O, no clock, no randomness: output depends only on the inputs.
  */
@@ -149,40 +151,6 @@ function asQuestionPrompt(body: string): string {
 }
 
 /**
- * Template 1 — Weekly review. A tutor builds a mixed exam (translation,
- * fill-in-the-blank, use-in-context), varying the question type across the
- * week's words.
- */
-export function buildWeeklyReviewPrompt(words: readonly PromptWord[]): string {
-  if (words.length === 0) {
-    throw new Error("buildWeeklyReviewPrompt requires at least one word.");
-  }
-  return asQuestionPrompt(`Você é um tutor de inglês. Monte uma prova de revisão semanal com as palavras abaixo.
-Varie o tipo de questão entre tradução, completar a frase e uso em contexto, misturando os formatos ao longo da prova.
-
-Palavras da semana:
-${formatWordList(words)}`);
-}
-
-/**
- * Template 2 — Vocabulary exam. One question per word, prioritising
- * use-in-context over rote translation; when a word has real context
- * sentences, they anchor its question.
- */
-export function buildVocabularyExamPrompt(
-  words: readonly PromptWord[],
-): string {
-  if (words.length === 0) {
-    throw new Error("buildVocabularyExamPrompt requires at least one word.");
-  }
-  return asQuestionPrompt(`Você é um examinador de vocabulário. Gere exatamente uma questão por palavra.
-Priorize o uso em contexto em vez de tradução decorada. Quando houver frases de contexto real, ancore a questão nelas.
-
-Palavras:
-${formatWordList(words)}`);
-}
-
-/**
  * Template 3 — Source comprehension. Questions about the source's *content*,
  * not only vocabulary. When a transcript/summary is provided, the questions are
  * grounded on that text; otherwise the AI only knows the source name and words.
@@ -211,6 +179,60 @@ export function buildSourceComprehensionPrompt(
   }
 
   return asQuestionPrompt(sections.join("\n\n"));
+}
+
+/**
+ * Closing block for the quiz-generation prompt: the strict-JSON instruction
+ * plus the AI-quiz schema. This is the contract the AiQuiz parser
+ * (`src/domain/quiz/aiQuiz.ts`) validates.
+ */
+export const AI_QUIZ_JSON_SCHEMA_INSTRUCTION = `Responda ESTRITAMENTE neste formato JSON, sem nenhum texto fora dele:
+
+{
+  "items": [
+    {
+      "term": "string",
+      "prompt": "string",
+      "options": ["string", "string", "string", "string"],
+      "correctIndex": 0,
+      "explanation": "string"
+    }
+  ]
+}
+
+Regras do JSON:
+- "items": exatamente uma questão por termo enviado; "term" deve casar EXATAMENTE com o termo enviado (mesma grafia).
+- "prompt": o enunciado completo da questão. Instruções em português; o conteúdo sendo testado (frases, palavras) em inglês.
+- "options": exatamente 4 alternativas, todas diferentes entre si e nenhuma vazia.
+- "correctIndex": inteiro de 0 a 3, o índice da ÚNICA alternativa correta em "options".
+- "explanation": 1–2 frases em português explicando por que a alternativa correta é a certa (e, se ajudar, por que as erradas enganam). É o que o estudante lê depois de responder.`;
+
+/**
+ * Quiz generation (ADR-009) — the AI writes the WHOLE quiz: one multiple-
+ * choice question per term, replying strictly in the AiQuiz JSON schema. The
+ * app validates the reply, reshuffles the alternatives and grades locally.
+ * ONE-turn prompt: the reply is machine-validated, never pasted back.
+ */
+export function buildQuizGenerationPrompt(words: readonly PromptWord[]): string {
+  if (words.length === 0) {
+    throw new Error("buildQuizGenerationPrompt requires at least one word.");
+  }
+
+  return `Você é um professor de inglês criando uma prova de múltipla escolha para um estudante brasileiro. O objetivo é APRENDER: cada questão deve ensinar algo sobre o termo, não apenas conferir memorização.
+
+Crie exatamente ${words.length} questões — uma por termo abaixo, na mesma ordem. Todas de múltipla escolha, com 4 alternativas e apenas UMA correta.
+
+Diretrizes das questões:
+- Questões simples e diretas (não necessariamente fáceis): teste UMA coisa por questão, com enunciado curto e sem pegadinhas artificiais.
+- Varie o estilo entre as questões: significado do termo, completar uma frase natural em inglês com o termo certo, escolher a frase que usa o termo corretamente, ou o termo que encaixa numa situação descrita.
+- Prefira frases naturais e cotidianas em inglês; quando houver "contexto real" do termo, inspire-se nele.
+- As alternativas erradas devem ser plausíveis (erros que um estudante brasileiro cometeria), mas claramente erradas para quem conhece o termo.
+- Use as definições fornecidas como fonte da verdade sobre o significado de cada termo.
+
+Termos:
+${formatWordList(words)}
+
+${AI_QUIZ_JSON_SCHEMA_INSTRUCTION}`;
 }
 
 /**

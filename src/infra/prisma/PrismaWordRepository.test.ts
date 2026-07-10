@@ -3,12 +3,10 @@ import { getTestPrisma, resetDb } from "../../../test/helpers/db.js";
 import { PrismaSourceRepository } from "./PrismaSourceRepository.js";
 import { PrismaSourceTypeRepository } from "./PrismaSourceTypeRepository.js";
 import { PrismaWordRepository } from "./PrismaWordRepository.js";
-import { PrismaReviewLogRepository } from "./PrismaReviewLogRepository.js";
 import type { NewWord } from "../../domain/ports/repositories.js";
 
 const prisma = getTestPrisma();
 const repo = new PrismaWordRepository(prisma);
-const reviewLogs = new PrismaReviewLogRepository(prisma);
 const sources = new PrismaSourceRepository(prisma);
 const types = new PrismaSourceTypeRepository(prisma);
 
@@ -79,27 +77,6 @@ describe("PrismaWordRepository — findByTerm", () => {
 
   it("returns null for an unknown id", async () => {
     expect(await repo.findById("missing")).toBeNull();
-  });
-});
-
-describe("PrismaWordRepository — listDueForReview", () => {
-  it("returns only words due at or before 'now', oldest due first", async () => {
-    const past = new Date("2026-06-10T00:00:00.000Z");
-    const earlier = new Date("2026-06-05T00:00:00.000Z");
-    const future = new Date("2026-06-30T00:00:00.000Z");
-    await repo.create(newWord({ term: "due-later", nextReview: past }));
-    await repo.create(newWord({ term: "due-first", nextReview: earlier }));
-    await repo.create(newWord({ term: "not-due", nextReview: future }));
-
-    const due = await repo.listDueForReview(NOW);
-    expect(due.map((w) => w.term)).toEqual(["due-first", "due-later"]);
-  });
-
-  it("includes words due exactly at 'now'", async () => {
-    await repo.create(newWord({ term: "edge", nextReview: NOW }));
-    expect((await repo.listDueForReview(NOW)).map((w) => w.term)).toContain(
-      "edge",
-    );
   });
 });
 
@@ -179,29 +156,3 @@ describe("PrismaWordRepository — update", () => {
   });
 });
 
-describe("PrismaWordRepository — applyReview", () => {
-  it("writes the new SRS state and records the review log atomically", async () => {
-    const word = await repo.create(newWord());
-    const updated = await repo.applyReview({
-      wordId: word.id,
-      srs: { easeFactor: 2.6, intervalDays: 1, repetitions: 1, nextReview: NOW },
-      reviewLog: { quality: 5, reviewedAt: NOW },
-    });
-    expect(updated.repetitions).toBe(1);
-    expect(updated.intervalDays).toBe(1);
-    const logs = await reviewLogs.listByWord(word.id);
-    expect(logs).toHaveLength(1);
-    expect(logs[0]?.quality).toBe(5);
-  });
-
-  it("rolls back (no log) when the word does not exist", async () => {
-    await expect(
-      repo.applyReview({
-        wordId: "ghost",
-        srs: { easeFactor: 2.5, intervalDays: 1, repetitions: 1, nextReview: NOW },
-        reviewLog: { quality: 5, reviewedAt: NOW },
-      }),
-    ).rejects.toThrow();
-    expect(await reviewLogs.listByWord("ghost")).toHaveLength(0);
-  });
-});

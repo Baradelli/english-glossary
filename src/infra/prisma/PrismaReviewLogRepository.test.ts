@@ -69,4 +69,53 @@ describe("PrismaReviewLogRepository", () => {
     expect(await repo.countSince(new Date("2026-06-15T00:00:00.000Z"))).toBe(1);
     expect(await repo.countSince(new Date("2026-05-01T00:00:00.000Z"))).toBe(2);
   });
+
+  it("listSince includes the boundary instant (gte) and orders ascending", async () => {
+    const wordId = await aWordId();
+    const cutoff = new Date("2026-06-15T00:00:00.000Z");
+    await repo.create({
+      wordId,
+      quality: 4,
+      reviewedAt: new Date("2026-06-18T00:00:00.000Z"),
+      intervalDays: 6,
+    });
+    await repo.create({
+      wordId,
+      quality: 2,
+      reviewedAt: new Date("2026-06-14T23:59:59.999Z"), // just before — excluded
+      intervalDays: 1,
+    });
+    await repo.create({
+      wordId,
+      quality: 5,
+      reviewedAt: cutoff, // exactly at the boundary — included
+      intervalDays: 1,
+    });
+
+    const logs = await repo.listSince(cutoff);
+    expect(logs.map((l) => l.quality)).toEqual([5, 4]);
+    expect(logs[0]?.reviewedAt.toISOString()).toBe(cutoff.toISOString());
+  });
+
+  it("listReviewDates returns EVERY reviewedAt instant, oldest first", async () => {
+    const wordId = await aWordId();
+    await repo.create({
+      wordId,
+      quality: 4,
+      reviewedAt: new Date("2026-06-18T00:00:00.000Z"),
+      intervalDays: 6,
+    });
+    await repo.create({
+      wordId,
+      quality: 5,
+      reviewedAt: new Date("2025-01-01T00:00:00.000Z"), // ancient — still listed
+      intervalDays: 1,
+    });
+
+    const dates = await repo.listReviewDates();
+    expect(dates.map((d) => d.toISOString())).toEqual([
+      "2025-01-01T00:00:00.000Z",
+      "2026-06-18T00:00:00.000Z",
+    ]);
+  });
 });

@@ -34,4 +34,20 @@ export class PrismaReviewLogRepository implements ReviewLogRepository {
       where: { reviewedAt: { gte: date } },
     });
   }
+
+  async listSince(date: Date): Promise<ReviewLog[]> {
+    const rows = await this.prisma.reviewLog.findMany({
+      where: { reviewedAt: { gte: date } },
+      orderBy: { reviewedAt: "asc" },
+    });
+    return rows.map(toReviewLog);
+  }
+
+  async listReviewDates(): Promise<Date[]> {
+    const rows = await this.prisma.reviewLog.findMany({
+      select: { reviewedAt: true },
+      orderBy: { reviewedAt: "asc" },
+    });
+    return rows.map((row) => row.reviewedAt);
+  }
 }

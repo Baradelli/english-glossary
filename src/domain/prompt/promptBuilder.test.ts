@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  AI_QUIZ_JSON_SCHEMA_INSTRUCTION,
   DEFINITION_SCHEMA_INSTRUCTION,
   JSON_SCHEMA_INSTRUCTION,
   PRESENT_EXAM_INSTRUCTION,
   buildCorrectionPrompt,
   buildDefineExpressionPrompt,
   buildDefineWordPrompt,
+  buildQuizGenerationPrompt,
   buildSourceComprehensionPrompt,
-  buildVocabularyExamPrompt,
-  buildWeeklyReviewPrompt,
   type PromptWord,
 } from "./promptBuilder.js";
 
@@ -30,12 +30,10 @@ const rambling: PromptWord = {
 
 const words: PromptWord[] = [ramble, rambling];
 
-// The two-turn flow (§6.2): the question prompts only ask the AI to present an
-// exam — they must NOT request the correction JSON. That belongs to turn 2.
+// The two-turn flow (§6.2): the question prompt only asks the AI to present an
+// exam — it must NOT request the correction JSON. That belongs to turn 2.
 describe("question prompts are turn 1 (present the exam, no JSON)", () => {
   const builders = [
-    ["weekly", () => buildWeeklyReviewPrompt(words)],
-    ["vocabulary", () => buildVocabularyExamPrompt(words)],
     ["comprehension", () =>
       buildSourceComprehensionPrompt({ source: { name: "S" }, words })],
   ] as const;
@@ -46,41 +44,6 @@ describe("question prompts are turn 1 (present the exam, no JSON)", () => {
 
   it.each(builders)("%s does not leak the correction schema", (_n, build) => {
     expect(build()).not.toContain(JSON_SCHEMA_INSTRUCTION);
-  });
-});
-
-describe("buildWeeklyReviewPrompt (Template 1)", () => {
-  it("lists every word verbatim (no lemmatisation)", () => {
-    const prompt = buildWeeklyReviewPrompt(words);
-    expect(prompt).toContain("ramble");
-    expect(prompt).toContain("rambling");
-  });
-
-  it("asks for a mixed exam (translation / fill-in / use-in-context)", () => {
-    const prompt = buildWeeklyReviewPrompt(words).toLowerCase();
-    expect(prompt).toContain("tradução");
-    expect(prompt).toContain("completar");
-    expect(prompt).toContain("contexto");
-  });
-
-  it("throws when there are no words to review", () => {
-    expect(() => buildWeeklyReviewPrompt([])).toThrow();
-  });
-});
-
-describe("buildVocabularyExamPrompt (Template 2)", () => {
-  it("includes real context sentences when a word has them", () => {
-    expect(buildVocabularyExamPrompt(words)).toContain(
-      "Sorry, I tend to ramble when I'm nervous.",
-    );
-  });
-
-  it("prioritises use-in-context over rote translation", () => {
-    expect(buildVocabularyExamPrompt(words).toLowerCase()).toContain("contexto");
-  });
-
-  it("throws when there are no words", () => {
-    expect(() => buildVocabularyExamPrompt([])).toThrow();
   });
 });
 
@@ -115,6 +78,45 @@ describe("buildSourceComprehensionPrompt (Template 3)", () => {
     expect(() =>
       buildSourceComprehensionPrompt({ source, words: [] }),
     ).not.toThrow();
+  });
+});
+
+describe("buildQuizGenerationPrompt (AI quiz generation — one-turn JSON)", () => {
+  it("asks for one question per term and lists every term", () => {
+    const prompt = buildQuizGenerationPrompt(words);
+    expect(prompt).toContain("exatamente 2 questões");
+    expect(prompt).toContain("ramble");
+    expect(prompt).toContain("rambling");
+  });
+
+  it("frames the questions as multiple choice", () => {
+    const prompt = buildQuizGenerationPrompt(words).toLowerCase();
+    expect(prompt).toContain("múltipla escolha");
+  });
+
+  it("ends with the strict AiQuiz JSON schema instruction incl. explanation", () => {
+    const prompt = buildQuizGenerationPrompt(words);
+    expect(prompt.endsWith(AI_QUIZ_JSON_SCHEMA_INSTRUCTION)).toBe(true);
+    for (const key of [
+      "items",
+      "term",
+      "prompt",
+      "options",
+      "correctIndex",
+      "explanation",
+    ]) {
+      expect(prompt).toContain(`"${key}"`);
+    }
+  });
+
+  it("does not use the two-turn present-exam instruction", () => {
+    expect(buildQuizGenerationPrompt(words)).not.toContain(
+      PRESENT_EXAM_INSTRUCTION,
+    );
+  });
+
+  it("throws on empty words", () => {
+    expect(() => buildQuizGenerationPrompt([])).toThrow();
   });
 });
 
@@ -180,9 +182,8 @@ describe("purity", () => {
   it("does not mutate the input words", () => {
     const input: PromptWord[] = [{ term: "ramble", contextSentences: ["one"] }];
     const snapshot = JSON.parse(JSON.stringify(input));
-    buildWeeklyReviewPrompt(input);
-    buildVocabularyExamPrompt(input);
     buildSourceComprehensionPrompt({ source: { name: "x" }, words: input });
+    buildQuizGenerationPrompt(input);
     expect(input).toEqual(snapshot);
   });
 });

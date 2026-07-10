@@ -5,8 +5,12 @@
  */
 
 import type {
+  ActivityCalendar,
+  ReviewForecast,
+  ScorePoint,
   Source,
   SourceType,
+  VocabGrowth,
   Word,
   WordKind,
   WordSighting,
@@ -97,6 +101,12 @@ export interface EditSightingInput {
   readonly examples?: string[];
 }
 
+/**
+ * Scalar totals shown on the dashboard's quiet footer. `exams.corrected`
+ * counts every CONCLUDED exam — legacy `corrigida` and quiz `finalizada` —
+ * with a non-null score, and `averageScore` averages over that same set (the
+ * UI labels it "concluídas").
+ */
 export interface DashboardMetrics {
   readonly words: {
     readonly total: number;
@@ -111,6 +121,53 @@ export interface DashboardMetrics {
     readonly corrected: number;
     readonly averageScore: number | null;
   };
+}
+
+/** One entry of the "palavras difíceis" ranking, term/kind already resolved. */
+export interface DifficultWordView {
+  readonly wordId: string;
+  readonly term: string;
+  readonly kind: WordKind;
+  /** All-time exam misses — displayed as context, never added to the count. */
+  readonly examErrors: number;
+  /** Failed reviews (quality < 3) in the activity window — the ranking key. */
+  readonly failedReviews: number;
+}
+
+/**
+ * Everything the "Painel" home renders, assembled in one use case so the page
+ * makes a single call. Time-based sections speak in LOCAL days — `now` and
+ * the timezone offset are injected by the page (see domain/insights).
+ */
+export interface DashboardData {
+  /** The "hoje" strip: streak + today's due/done/captured counts. */
+  readonly today: {
+    readonly streakDays: number;
+    /**
+     * Reviews due at or before `now` — words already due for study
+     * (mirror of `forecast.dueNowCount`).
+     */
+    readonly dueNowCount: number;
+    /**
+     * Reviews due later today, after `now` — not answerable yet (mirror of
+     * `forecast.dueLaterTodayCount`).
+     */
+    readonly dueLaterTodayCount: number;
+    readonly reviewedTodayCount: number;
+    readonly capturedTodayCount: number;
+  };
+  readonly activity: ActivityCalendar;
+  readonly forecast: ReviewForecast;
+  readonly growth: VocabGrowth;
+  /** Current per-state composition (derived, never stored — §6.1). */
+  readonly composition: {
+    readonly nova: number;
+    readonly aprendendo: number;
+    readonly dominada: number;
+  };
+  readonly scoreTrend: ScorePoint[];
+  readonly difficultWords: DifficultWordView[];
+  readonly totals: DashboardMetrics;
 }
 
 export interface SourceDetail {

@@ -19,19 +19,30 @@ repetition e gera as provas que alimentam a IA.
 
 ## O que já funciona
 
-Todos os fluxos centrais, ponta a ponta, no **modo Manual** (copia-e-cola com a IA):
+Todos os fluxos centrais, ponta a ponta. Captura, revisão (SRS) e painel rodam
+**100% offline**; só as **provas** dependem da IA (chave de API):
 
 - **Captura (Fluxo A):** buscar palavra (case-insensitive, sem lematizar — `ramble`
   e `rambling` são entradas distintas), cadastrar palavra nova, gerir fontes e
   tipos, captura em lote pela página da fonte, reencontros, e as vistas por
   palavra e por fonte (separando novas de reencontros).
-- **Revisão (Fluxo B):** fila por data de vencimento + avaliação 0–5 (SM-2).
-- **Provas (Fluxo C):** ciclo de dois turnos — gerar prompt → colar na IA →
-  colar a prova respondida → gerar prompt de correção → colar o JSON →
-  **validar e atualizar o SRS**. Três templates: revisão semanal, vocabulário,
-  compreensão de fonte (com transcrição opcional).
-- **Painel (Fluxo D):** métricas (palavras por estado, fontes, revisões,
-  provas) + **export/backup** do banco inteiro em JSON.
+- **Revisão (Fluxo B):** a repetição espaçada (SM-2) acontece ao **responder
+  provas** — acerto → qualidade 5, erro → 2 — recalculando intervalo, ease e
+  próxima revisão e gravando o histórico (`ReviewLog`). A due-ness de cada
+  verbete alimenta a faixa "hoje" e pondera a prova de vocabulário. _(A tela
+  dedicada de revisão card-a-card foi aposentada — ADR-010.)_
+- **Provas (Fluxo C):** quiz **dentro do app** de múltipla escolha gerado pela
+  IA (ADR-009) — o app escolhe os verbetes (semana / vocabulário ponderado /
+  erros de uma prova) e a IA escreve as questões, com explicação didática de
+  cada resposta; o app valida o JSON, embaralha as alternativas e **corrige
+  localmente**. Correção imediata questão a questão, nota computada pelo app,
+  prova retomável e **prática só dos erros** (com questões novas). Exige chave
+  de API. A prova de **compreensão de fonte** mantém o ciclo de dois turnos com
+  IA (com transcrição opcional).
+- **Painel (Fluxo D):** faixa "hoje" (streak + revisões que vencem agora),
+  heatmap de atividade estilo GitHub, previsão de revisões dos próximos 7 dias,
+  crescimento do vocabulário, tendência de notas de prova e ranking de palavras
+  difíceis (Recharts, ADR-008) + **export/backup** do banco inteiro em JSON.
 
 ## Stack
 
@@ -43,6 +54,7 @@ Todos os fluxos centrais, ponta a ponta, no **modo Manual** (copia-e-cola com a 
 | SRS | **SM-2** | Clássico, determinístico, testável (ADR-004). |
 | Testes | **Vitest** | TDD nas regras com lógica real. |
 | UI | **React + Tailwind CSS** | — |
+| Gráficos | **Recharts** + heatmap próprio | Lib mais popular de charts p/ React (ADR-008); calendar heatmap não existe nela. |
 
 ## Arquitetura — hexagonal (ports & adapters)
 
@@ -178,10 +190,23 @@ ramificações não cobertas são guards defensivos para estados que as foreign 
 - **SM-2 "clássico":** o ease factor é recalculado em toda revisão; errar (qualidade
   &lt; 3) zera as repetições e encurta o intervalo. O estado (nova/aprendendo/
   dominada) é **derivado** dos campos SRS, nunca uma coluna (§6.1).
-- **Provas em dois turnos:** o prompt-pergunta só pede que a IA *apresente* a
-  prova; só o prompt-correção pede o JSON estrito — validado pelo mesmo schema Zod.
-- **Acerto → qualidade SM-2:** acerto = 5, erro = 2 (mapeamento do booleano da
-  correção para a escala 0–5).
+- **Prova gerada pela IA, corrigida localmente (ADR-009):** o app decide _quais_
+  verbetes entram na prova e a IA escreve as questões de múltipla escolha (com
+  explicação de cada resposta); o app valida o JSON (Zod), reembaralha as
+  alternativas — o índice correto nunca vaza pela posição — e corrige sozinho.
+  Restringir a só múltipla escolha torna a correção trivial e à prova de
+  ambiguidade, então terceirizar a _geração_ não custa a _correção verificável_.
+  Substituiu o motor local determinístico do ADR-007, cujas questões saíam
+  engessadas; as provas antigas continuam legíveis.
+- **Provas de compreensão em dois turnos:** o prompt-pergunta só pede que a IA
+  *apresente* a prova; só o prompt-correção pede o JSON estrito — validado pelo
+  mesmo schema Zod.
+- **Acerto → qualidade SM-2:** ao finalizar uma prova, cada resposta vira uma
+  revisão SM-2 — acerto = 5, erro = 2 (mapeamento do booleano da correção para a
+  escala 0–5).
+- **Dia local injetado:** heatmap, streak e previsão bucketizam por dia civil no
+  fuso do usuário (offset injetado nas funções puras de `src/domain/insights/`),
+  nunca por dia UTC.
 - **SQLite sem `Json`/arrays:** `examples` e `resultJson` são colunas `String` com
   JSON serializado nos mappers; dedup case-insensitive via colunas normalizadas
   (`termKey`/`nameKey`).

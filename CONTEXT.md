@@ -20,3 +20,26 @@ A recorded occurrence of a verbete inside a `Source` (`WordSighting`). Carries t
 
 **Source** (fonte):
 Where a verbete was encountered (a YouTube video, a book, a podcast…), grouped by `SourceType`. Both Palavras and Expressões are captured inside a source.
+
+**Revisão** (review):
+One SM-2 update of a verbete: it recomputes the schedule (interval, ease, `nextReview`) and writes a `ReviewLog`. Reviews are produced by **answering prova questions** — a correct answer maps to SM-2 quality 5, a wrong one to 2 (there is no separate review screen; the dedicated card-by-card session was retired — ADR-010). A verbete's due-ness (`nextReview <= now`) still drives the dashboard's "hoje" band and weights the vocabulary prova.
+
+**Questão** (question):
+One answerable unit of a prova, always anchored to a single verbete (`ExamQuestion`; exactly one questão per verbete per prova). Written by the AI as multiple choice (four alternatives, one correct) grounded in the verbete's definitions and real `contextSentence`; the app validates, reshuffles the alternatives and grades it locally (ADR-009). Older provas may hold retired types (typed recall, cloze) and still render.
+_Avoid_: calling the AI the grader — the AI only writes questions; the app grades.
+
+**Distrator** (distractor):
+An incorrect multiple-choice alternative. Written by the AI (a plausible mistake a Brazilian learner would make), then validated: the four alternatives must be non-empty and distinct.
+
+**Explicação** (explanation):
+A short PT note the AI attaches to each questão explaining why the correct alternative is right; shown to the learner only _after_ answering, so a prova doubles as a lesson.
+
+**Prova de prática** (practice exam):
+A follow-up quiz (`type = "pratica"`) whose verbetes are only those answered wrong in a finished prova (`practiceOfId` points back to it). The AI writes fresh questions for them, so practice never repeats the exact same wording. Updates SRS like any prova.
+
+**Streak** (sequência):
+Consecutive _local days_ with study activity (reviews or captures), ending today — or yesterday, if today has no activity yet.
+
+**Dia local** (local day):
+The civil day in the user's timezone, used for all daily bucketing (heatmap, streak, forecast). Timestamps are stored in UTC and converted with an injected offset.
+_Avoid_: bucketing anything by UTC calendar day.

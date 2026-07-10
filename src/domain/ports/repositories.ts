@@ -11,7 +11,10 @@
 
 import type {
   Exam,
+  ExamQuestion,
   ExamType,
+  ExamWord,
+  QuizQuestionType,
   ReviewLog,
   Source,
   SourceType,
@@ -65,12 +68,6 @@ export interface FirstSighting {
   readonly contextSentence?: string | null;
 }
 
-export interface ApplyReviewInput {
-  readonly wordId: string;
-  readonly srs: SrsUpdate;
-  readonly reviewLog: { readonly quality: number; readonly reviewedAt: Date };
-}
-
 export interface WordRepository {
   create(data: NewWord): Promise<Word>;
   /**
@@ -88,14 +85,7 @@ export interface WordRepository {
   listAll(): Promise<Word[]>;
   /** Edits a word's general definition/examples (not its term or SRS state). */
   update(id: string, data: UpdateWord): Promise<Word>;
-  /** Words whose nextReview is at or before `now`, oldest due first. */
-  listDueForReview(now: Date): Promise<Word[]>;
   updateSrs(id: string, srs: SrsUpdate): Promise<Word>;
-  /**
-   * Applies a review in one transaction: writes the new SRS state to the word
-   * and records the ReviewLog entry. Used by the review flow (§ Fluxo B).
-   */
-  applyReview(input: ApplyReviewInput): Promise<Word>;
 }
 
 /** Editable per-source fields of a sighting. */
@@ -113,6 +103,16 @@ export interface WordSightingRepository {
   update(id: string, data: UpdateSighting): Promise<WordSighting>;
   listByWord(wordId: string): Promise<WordSighting[]>;
   listBySource(sourceId: string): Promise<WordSighting[]>;
+  /**
+   * Every sighting with seenAt at or after `date`, oldest first — the
+   * dashboard's activity window.
+   */
+  listSince(date: Date): Promise<WordSighting[]>;
+  /**
+   * Every sighting's seenAt instant, oldest first — dates only, unbounded.
+   * Feeds the study streak, which may reach further back than any window.
+   */
+  listSeenDates(): Promise<Date[]>;
 }
 
 export interface NewSource {
@@ -155,6 +155,16 @@ export interface ReviewLogRepository {
   listByWord(wordId: string): Promise<ReviewLog[]>;
   /** Number of reviews recorded at or after `date` (for the dashboard). */
   countSince(date: Date): Promise<number>;
+  /**
+   * Every log with reviewedAt at or after `date`, oldest first — the
+   * dashboard's activity window.
+   */
+  listSince(date: Date): Promise<ReviewLog[]>;
+  /**
+   * Every log's reviewedAt instant, oldest first — dates only, unbounded.
+   * Feeds the study streak, which may reach further back than any window.
+   */
+  listReviewDates(): Promise<Date[]>;
 }
 
 export interface NewExam {
@@ -185,6 +195,51 @@ export interface ExamCorrection {
   readonly words: readonly WordCorrection[];
 }
 
+/** One question of a quiz, as validated from the AI reply (pre-persistence). */
+export interface NewExamQuestion {
+  readonly wordId: string;
+  readonly position: number;
+  readonly type: QuizQuestionType;
+  readonly prompt: string;
+  /** Multiple-choice alternatives; null for legacy typed/cloze questions. */
+  readonly options: readonly string[] | null;
+  /** Index into `options` (multiple choice only). */
+  readonly correctIndex: number | null;
+  /** Expected text (legacy typed/cloze only). */
+  readonly correctAnswer: string | null;
+  /** The source sentence backing the question. */
+  readonly contextSentence: string | null;
+  /** Short PT explanation of the correct answer, shown after answering. */
+  readonly explanation: string | null;
+}
+
+/** A local quiz to open: the exam shell plus every generated question. */
+export interface NewQuizExam {
+  readonly type: ExamType;
+  /** Origin exam when this is a practice quiz re-testing its mistakes. */
+  readonly practiceOfId?: string | null;
+  readonly questions: readonly NewExamQuestion[];
+  readonly createdAt?: Date;
+}
+
+/** The graded answer written onto a question (computed server-side). */
+export interface QuestionAnswer {
+  readonly userAnswer: string;
+  readonly isCorrect: boolean;
+  readonly answeredAt: Date;
+}
+
+/**
+ * Everything written when a quiz transitions to `finalizada`. The caller
+ * computes the score and per-word SRS effects (mirror of {@link
+ * ExamCorrection}); the repository persists them atomically.
+ */
+export interface FinishQuizData {
+  readonly score: number;
+  readonly finishedAt: Date;
+  readonly words: readonly WordCorrection[];
+}
+
 export interface ExamRepository {
   create(data: NewExam): Promise<Exam>;
   findById(id: string): Promise<Exam | null>;
@@ -204,6 +259,39 @@ export interface ExamRepository {
    * each affected word's SRS plus its ReviewLog. All-or-nothing.
    */
   submitCorrection(examId: string, correction: ExamCorrection): Promise<Exam>;
+  /**
+   * Opens a local quiz in one transaction: creates the exam in `em_andamento`
+   * together with every question. All-or-nothing — a quiz never exists
+   * half-built.
+   */
+  createQuiz(data: NewQuizExam): Promise<Exam>;
+  /** Every question of an exam, ordered by position. */
+  listQuestions(examId: string): Promise<ExamQuestion[]>;
+  findQuestionById(id: string): Promise<ExamQuestion | null>;
+  /**
+   * Writes the graded answer onto a question, only if it is still unanswered
+   * (answeredAt null) — a second submission is rejected, keeping answers
+   * idempotent across double-clicks and stale tabs.
+   */
+  answerQuestion(questionId: string, data: QuestionAnswer): Promise<ExamQuestion>;
+  /**
+   * The open quiz of the given type, if any — the start flow resumes it
+   * instead of creating a duplicate.
+   */
+  findInProgressByType(type: ExamType): Promise<Exam | null>;
+  /**
+   * Closes a quiz in a single all-or-nothing transaction: requires the exam to
+   * still be `em_andamento` (guards against a double close), stores score +
+   * finishedAt + status `finalizada`, writes one ExamWord per word, and
+   * updates each word's SRS plus its ReviewLog (mirror of {@link
+   * submitCorrection}).
+   */
+  finishQuiz(examId: string, data: FinishQuizData): Promise<Exam>;
+  /**
+   * Every ExamWord row across all exams — the per-word hit/miss facts behind
+   * the dashboard's difficult-words ranking.
+   */
+  listWordResults(): Promise<ExamWord[]>;
 }
 
 /** Key-value app settings (AI provider config, theme, onboarding flags, ...). */

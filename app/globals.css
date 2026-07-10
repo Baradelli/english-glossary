@@ -13,6 +13,29 @@ html.dark {
   color-scheme: dark;
 }
 
+/* Chart theme (Fase 3). Recharts takes colors through SVG props, which
+   Tailwind classes can't reliably reach, so the dashboard charts read these
+   variables instead — same light/dark pairs as the design system
+   (blue-600/blue-400, slate-200/slate-700, slate-600/slate-400,
+   slate-400/slate-600, white/slate-900). */
+:root {
+  --chart-accent: #2563eb;
+  --chart-accent-soft: rgba(37, 99, 235, 0.1);
+  --chart-grid: #e2e8f0;
+  --chart-axis: #475569;
+  --chart-bar-muted: #94a3b8;
+  --chart-dot-ring: #ffffff;
+}
+
+html.dark {
+  --chart-accent: #60a5fa;
+  --chart-accent-soft: rgba(96, 165, 250, 0.12);
+  --chart-grid: #334155;
+  --chart-axis: #94a3b8;
+  --chart-bar-muted: #475569;
+  --chart-dot-ring: #0f172a;
+}
+
 /* Onboarding tour (driver.js) popover — styled to match the app's cards. */
 .driver-popover.eg-tour {
   @apply max-w-sm rounded-lg border border-slate-200 bg-white p-5 shadow-lg;

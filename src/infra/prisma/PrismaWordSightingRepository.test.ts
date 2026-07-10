@@ -121,6 +121,63 @@ describe("PrismaWordSightingRepository — listByWord", () => {
   });
 });
 
+describe("PrismaWordSightingRepository — listSince", () => {
+  it("includes the boundary instant (gte) and orders ascending", async () => {
+    const wordId = await aWordId();
+    const sourceId = await aSourceId();
+    const cutoff = new Date("2026-06-15T00:00:00.000Z");
+    await repo.record({
+      wordId,
+      sourceId,
+      seenAt: new Date("2026-06-18T00:00:00.000Z"),
+      isFirstEncounter: false,
+    });
+    await repo.record({
+      wordId,
+      sourceId,
+      seenAt: new Date("2026-06-14T23:59:59.999Z"), // just before — excluded
+      isFirstEncounter: true,
+    });
+    await repo.record({
+      wordId,
+      sourceId,
+      seenAt: cutoff, // exactly at the boundary — included
+      isFirstEncounter: false,
+    });
+
+    const sightings = await repo.listSince(cutoff);
+    expect(sightings.map((s) => s.seenAt.toISOString())).toEqual([
+      cutoff.toISOString(),
+      "2026-06-18T00:00:00.000Z",
+    ]);
+  });
+});
+
+describe("PrismaWordSightingRepository — listSeenDates", () => {
+  it("returns EVERY seenAt instant, oldest first", async () => {
+    const wordId = await aWordId();
+    const sourceId = await aSourceId();
+    await repo.record({
+      wordId,
+      sourceId,
+      seenAt: new Date("2026-06-18T00:00:00.000Z"),
+      isFirstEncounter: false,
+    });
+    await repo.record({
+      wordId,
+      sourceId,
+      seenAt: new Date("2025-01-01T00:00:00.000Z"), // ancient — still listed
+      isFirstEncounter: true,
+    });
+
+    const dates = await repo.listSeenDates();
+    expect(dates.map((d) => d.toISOString())).toEqual([
+      "2025-01-01T00:00:00.000Z",
+      "2026-06-18T00:00:00.000Z",
+    ]);
+  });
+});
+
 describe("PrismaWordSightingRepository — listBySource", () => {
   it("lists the sightings recorded in a given source", async () => {
     const sourceId = await aSourceId();

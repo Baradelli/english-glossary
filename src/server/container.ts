@@ -27,8 +27,17 @@ export const captureDeps = {
   sightings: repos.sightings,
 };
 
-export const examGenDeps = {
+export const quizDeps = {
   words: repos.words,
+  sightings: repos.sightings,
+  exams: repos.exams,
+};
+
+export const dashboardDeps = {
+  words: repos.words,
+  sources: repos.sources,
+  reviewLogs: repos.reviewLogs,
+  sightings: repos.sightings,
   exams: repos.exams,
 };
 

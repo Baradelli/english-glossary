@@ -12,7 +12,9 @@
  * Versioning: v1 files predate `Word.kind` and omit it entirely; the schema's
  * `.default("palavra")` imports them faithfully (every entry was a plain word
  * back then). v2 carries `kind` so a round trip no longer demotes fixed
- * expressions to "palavra". {@link exportAll} always emits v2.
+ * expressions to "palavra". v3 adds the local quiz engine: `examQuestions`
+ * (default [] so v1/v2 files import unchanged) plus `Exam.finishedAt` and
+ * `Exam.practiceOfId` (defaults null). {@link exportAll} always emits v3.
  *
  * Scope: the `Setting` table (machine-local configuration such as the API key)
  * is deliberately OUTSIDE the backup — it is neither exported nor touched by a
@@ -79,6 +81,9 @@ const ExamBackup = z.object({
   correctionPrompt: z.string().nullable(),
   resultJson: ExamResultSchema.nullable(),
   score: z.number().int().nullable(),
+  // Absent in v1/v2 files → null (the quiz engine landed in v3).
+  finishedAt: Iso.nullable().default(null),
+  practiceOfId: z.string().nullable().default(null),
   createdAt: Iso,
 });
 const ExamWordBackup = z.object({
@@ -87,9 +92,26 @@ const ExamWordBackup = z.object({
   wordId: z.string(),
   correct: z.boolean(),
 });
+const ExamQuestionBackup = z.object({
+  id: z.string(),
+  examId: z.string(),
+  wordId: z.string(),
+  position: z.number().int(),
+  type: z.string(),
+  prompt: z.string(),
+  options: z.array(z.string()).nullable(),
+  correctIndex: z.number().int().nullable(),
+  correctAnswer: z.string().nullable(),
+  contextSentence: z.string().nullable(),
+  // Absent in pre-ADR-009 files → imported as null.
+  explanation: z.string().nullable().default(null),
+  userAnswer: z.string().nullable(),
+  isCorrect: z.boolean().nullable(),
+  answeredAt: Iso.nullable(),
+});
 
 export const BackupSchema = z.object({
-  version: z.union([z.literal(1), z.literal(2)]),
+  version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   sourceTypes: z.array(SourceTypeBackup),
   sources: z.array(SourceBackup),
   words: z.array(WordBackup),
@@ -97,24 +119,35 @@ export const BackupSchema = z.object({
   reviewLogs: z.array(ReviewLogBackup),
   exams: z.array(ExamBackup),
   examWords: z.array(ExamWordBackup),
+  // Absent in v1/v2 files → imported as an empty table.
+  examQuestions: z.array(ExamQuestionBackup).default([]),
 });
 
 export type Backup = z.infer<typeof BackupSchema>;
 
 export async function exportAll(prisma: PrismaClient): Promise<Backup> {
-  const [sourceTypes, sources, words, wordSightings, reviewLogs, exams, examWords] =
-    await Promise.all([
-      prisma.sourceType.findMany(),
-      prisma.source.findMany(),
-      prisma.word.findMany(),
-      prisma.wordSighting.findMany(),
-      prisma.reviewLog.findMany(),
-      prisma.exam.findMany(),
-      prisma.examWord.findMany(),
-    ]);
+  const [
+    sourceTypes,
+    sources,
+    words,
+    wordSightings,
+    reviewLogs,
+    exams,
+    examWords,
+    examQuestions,
+  ] = await Promise.all([
+    prisma.sourceType.findMany(),
+    prisma.source.findMany(),
+    prisma.word.findMany(),
+    prisma.wordSighting.findMany(),
+    prisma.reviewLog.findMany(),
+    prisma.exam.findMany(),
+    prisma.examWord.findMany(),
+    prisma.examQuestion.findMany(),
+  ]);
 
   return {
-    version: 2,
+    version: 3,
     sourceTypes: sourceTypes.map((r) => ({
       id: r.id,
       name: r.name,
@@ -172,6 +205,8 @@ export async function exportAll(prisma: PrismaClient): Promise<Backup> {
         ? ExamResultSchema.parse(JSON.parse(r.resultJson))
         : null,
       score: r.score,
+      finishedAt: r.finishedAt ? r.finishedAt.toISOString() : null,
+      practiceOfId: r.practiceOfId,
       createdAt: r.createdAt.toISOString(),
     })),
     examWords: examWords.map((r) => ({
@@ -179,6 +214,22 @@ export async function exportAll(prisma: PrismaClient): Promise<Backup> {
       examId: r.examId,
       wordId: r.wordId,
       correct: r.correct,
+    })),
+    examQuestions: examQuestions.map((r) => ({
+      id: r.id,
+      examId: r.examId,
+      wordId: r.wordId,
+      position: r.position,
+      type: r.type,
+      prompt: r.prompt,
+      options: r.options ? z.array(z.string()).parse(JSON.parse(r.options)) : null,
+      correctIndex: r.correctIndex,
+      correctAnswer: r.correctAnswer,
+      contextSentence: r.contextSentence,
+      explanation: r.explanation,
+      userAnswer: r.userAnswer,
+      isCorrect: r.isCorrect,
+      answeredAt: r.answeredAt ? r.answeredAt.toISOString() : null,
     })),
   };
 }
@@ -258,6 +309,9 @@ async function insertAll(
       },
     });
   }
+  // Exams in TWO passes: practiceOfId is a self-FK, and a practice exam may
+  // appear in the file before its origin. Create everything with the link
+  // nulled first, then wire the links once every exam exists.
   for (const e of backup.exams) {
     await tx.exam.create({
       data: {
@@ -270,9 +324,19 @@ async function insertAll(
         correctionPrompt: e.correctionPrompt,
         resultJson: e.resultJson ? JSON.stringify(e.resultJson) : null,
         score: e.score,
+        finishedAt: e.finishedAt ? new Date(e.finishedAt) : null,
+        practiceOfId: null,
         createdAt: new Date(e.createdAt),
       },
     });
+  }
+  for (const e of backup.exams) {
+    if (e.practiceOfId !== null) {
+      await tx.exam.update({
+        where: { id: e.id },
+        data: { practiceOfId: e.practiceOfId },
+      });
+    }
   }
   for (const ew of backup.examWords) {
     await tx.examWord.create({
@@ -281,6 +345,26 @@ async function insertAll(
         examId: ew.examId,
         wordId: ew.wordId,
         correct: ew.correct,
+      },
+    });
+  }
+  for (const q of backup.examQuestions) {
+    await tx.examQuestion.create({
+      data: {
+        id: q.id,
+        examId: q.examId,
+        wordId: q.wordId,
+        position: q.position,
+        type: q.type,
+        prompt: q.prompt,
+        options: q.options === null ? null : JSON.stringify(q.options),
+        correctIndex: q.correctIndex,
+        correctAnswer: q.correctAnswer,
+        contextSentence: q.contextSentence,
+        explanation: q.explanation,
+        userAnswer: q.userAnswer,
+        isCorrect: q.isCorrect,
+        answeredAt: q.answeredAt ? new Date(q.answeredAt) : null,
       },
     });
   }
@@ -323,6 +407,7 @@ export async function replaceAll(
     await prisma.$transaction(
       async (tx) => {
         // FK-reverse wipe (children before parents); Setting is excluded.
+        await tx.examQuestion.deleteMany();
         await tx.examWord.deleteMany();
         await tx.exam.deleteMany();
         await tx.reviewLog.deleteMany();

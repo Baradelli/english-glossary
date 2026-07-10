@@ -28,6 +28,12 @@ const { runMigrations } = requireCjs("../electron/server/migrate.cjs") as {
 
 const REAL_MIGRATIONS = path.join(process.cwd(), "prisma", "migrations");
 
+// Every real migration (directories with a migration.sql), sorted by name —
+// derived so adding a migration doesn't silently break the count assertions.
+const REAL_MIGRATION_NAMES = readdirSync(REAL_MIGRATIONS)
+  .filter((name) => existsSync(path.join(REAL_MIGRATIONS, name, "migration.sql")))
+  .sort();
+
 function fileUrl(dbFile: string): string {
   return `file:${dbFile.split(path.sep).join("/")}`;
 }
@@ -143,7 +149,7 @@ describe("migration runner", () => {
       readControl(deployDb),
     ]);
     expect(fromRunner).toEqual(fromDeploy);
-    expect(fromRunner).toHaveLength(4);
+    expect(fromRunner).toHaveLength(REAL_MIGRATION_NAMES.length);
   });
 
   it("case 2b (safety) — `prisma migrate deploy` treats the runner's DB as fully applied", () => {
@@ -171,7 +177,7 @@ describe("migration runner", () => {
       migrationsDir: REAL_MIGRATIONS,
       databaseUrl: fileUrl(dbFile),
     });
-    expect(seeded.applied).toHaveLength(4);
+    expect(seeded.applied).toHaveLength(REAL_MIGRATION_NAMES.length);
 
     // A migrations dir = copy of the real ones + one extra (never touch the
     // real prisma/migrations).
@@ -209,7 +215,7 @@ describe("migration runner", () => {
       databaseUrl: fileUrl(dbFile),
     });
 
-    expect(result.applied).toHaveLength(4);
+    expect(result.applied).toHaveLength(REAL_MIGRATION_NAMES.length);
     expect(existsSync(dbFile)).toBe(true);
     expect(readdirSync(dir).filter((f) => f.includes(".bak-"))).toEqual([]);
   });
@@ -219,12 +225,13 @@ describe("migration runner", () => {
     const dbFile = path.join(dir, "data.db");
 
     // Phase 1: schema state before the rebuild (init + add_sighting_definitions).
-    const phase1 = path.join(dir, "phase1");
-    mkdirSync(phase1);
-    for (const name of [
+    const phase1Names = [
       "20260620020513_init",
       "20260620065912_add_sighting_definitions",
-    ]) {
+    ];
+    const phase1 = path.join(dir, "phase1");
+    mkdirSync(phase1);
+    for (const name of phase1Names) {
       cpSync(path.join(REAL_MIGRATIONS, name), path.join(phase1, name), {
         recursive: true,
       });
@@ -278,10 +285,9 @@ describe("migration runner", () => {
       migrationsDir: REAL_MIGRATIONS,
       databaseUrl: fileUrl(dbFile),
     });
-    expect(result.applied).toEqual([
-      "20260630035045_add_word_kind",
-      "20260708160813_add_setting",
-    ]);
+    expect(result.applied).toEqual(
+      REAL_MIGRATION_NAMES.filter((name) => !phase1Names.includes(name)),
+    );
 
     // The Word row survived the rebuild and picked up the new column's default…
     expect(await countRows(dbFile, 'SELECT COUNT(*) AS n FROM "Word"')).toBe(1);

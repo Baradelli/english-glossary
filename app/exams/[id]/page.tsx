@@ -9,8 +9,15 @@ import {
   AutoCorrectForm,
   CorrectionForm,
 } from "../../../src/ui/ExamForms.js";
+import { QuizResultActions } from "../../../src/ui/QuizResultActions.js";
+import { QuizRunner, type QuizQuestionVM } from "../../../src/ui/QuizRunner.js";
 import { cardClass } from "../../../src/ui/controls.js";
-import type { ExamType } from "../../../src/domain/index.js";
+import type {
+  Exam,
+  ExamQuestion,
+  ExamStatus,
+  ExamType,
+} from "../../../src/domain/index.js";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +25,23 @@ const typeLabel: Record<ExamType, string> = {
   semanal: "Revisão semanal",
   vocabulario: "Prova de vocabulário",
   compreensao: "Prova de compreensão",
+  pratica: "Prática de erros",
+};
+
+const statusLabel: Record<ExamStatus, string> = {
+  gerada: "gerada",
+  respondida: "respondida",
+  corrigida: "corrigida",
+  em_andamento: "em andamento",
+  finalizada: "finalizada",
+};
+
+const statusStyle: Record<ExamStatus, string> = {
+  gerada: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300",
+  respondida: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
+  corrigida: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
+  em_andamento: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300",
+  finalizada: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
 };
 
 function Step({
@@ -42,6 +66,121 @@ function Step({
   );
 }
 
+/** The user's answer as readable text (MC answers are stored as an index). */
+function userAnswerText(question: ExamQuestion): string {
+  if (question.userAnswer === null) return "—";
+  if (question.options !== null) {
+    const index = Number(question.userAnswer);
+    return question.options[index] ?? question.userAnswer;
+  }
+  return question.userAnswer;
+}
+
+/** The answer key as readable text — only ever rendered on the server, after the quiz is closed. */
+function correctAnswerText(question: ExamQuestion): string {
+  if (question.options !== null && question.correctIndex !== null) {
+    return question.options[question.correctIndex] ?? "";
+  }
+  return question.correctAnswer ?? "";
+}
+
+/** Server-rendered result of a finished quiz: score, per-question review, practice CTA. */
+async function QuizResult({ exam }: { exam: Exam }): Promise<ReactNode> {
+  const [questions, words] = await Promise.all([
+    repos.exams.listQuestions(exam.id),
+    repos.words.listAll(),
+  ]);
+  const termById = new Map(words.map((word) => [word.id, word.term]));
+  const errorCount = questions.filter((q) => q.isCorrect === false).length;
+
+  return (
+    <>
+      <section className={cardClass}>
+        <div className="flex items-baseline justify-between">
+          <h2 className="font-semibold">Resultado</h2>
+          <span className="text-3xl font-bold">{exam.score ?? 0}/100</span>
+        </div>
+        {exam.practiceOfId ? (
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Prática da prova{" "}
+            <Link
+              href={`/exams/${exam.practiceOfId}`}
+              className="text-blue-600 hover:underline dark:text-blue-400"
+            >
+              original
+            </Link>
+            .
+          </p>
+        ) : null}
+        <ol className="mt-4 divide-y divide-slate-100 dark:divide-slate-800">
+          {questions.map((question) => {
+            const correct = question.isCorrect === true;
+            const term = termById.get(question.wordId);
+            return (
+              <li key={question.id} className="flex items-start gap-3 py-3">
+                <span
+                  className={
+                    correct
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-red-600 dark:text-red-400"
+                  }
+                >
+                  <span aria-hidden>{correct ? "✓" : "✗"}</span>
+                  <span className="sr-only">{correct ? "Acertou" : "Errou"}</span>
+                </span>
+                <div className="min-w-0 space-y-1">
+                  {term ? (
+                    <Link
+                      href={`/glossary/${question.wordId}`}
+                      className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+                    >
+                      {term}
+                    </Link>
+                  ) : (
+                    <span className="font-medium text-slate-500 dark:text-slate-400">
+                      (palavra removida)
+                    </span>
+                  )}
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    {question.prompt}
+                  </p>
+                  <p className="text-sm">
+                    Sua resposta:{" "}
+                    <span className="font-medium">{userAnswerText(question)}</span>
+                    {!correct ? (
+                      <>
+                        {" "}
+                        · Correta:{" "}
+                        <span className="font-medium">
+                          {correctAnswerText(question)}
+                        </span>
+                      </>
+                    ) : null}
+                  </p>
+                  {question.explanation ? (
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      {question.explanation}
+                    </p>
+                  ) : null}
+                  {question.contextSentence ? (
+                    <p className="text-sm italic text-slate-500 dark:text-slate-400">
+                      “{question.contextSentence}”
+                    </p>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+
+      {errorCount > 0 ? (
+        <QuizResultActions examId={exam.id} errorCount={errorCount} />
+      ) : null}
+    </>
+  );
+}
+
 export default async function ExamPage({
   params,
 }: {
@@ -51,17 +190,56 @@ export default async function ExamPage({
   const exam = await repos.exams.findById(id);
   if (!exam) notFound();
 
-  const apiEnabled = (await getAiProvider()) !== null;
-
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-          {typeLabel[exam.type]} · {exam.status}
+        <p className="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+          {typeLabel[exam.type]}
+          <span
+            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyle[exam.status]}`}
+          >
+            {statusLabel[exam.status]}
+          </span>
         </p>
         <h1 className="text-2xl font-bold">Prova</h1>
       </header>
 
+      {exam.status === "em_andamento" ? (
+        <InProgressQuiz examId={exam.id} />
+      ) : exam.status === "finalizada" ? (
+        <QuizResult exam={exam} />
+      ) : (
+        <LegacyExam exam={exam} />
+      )}
+
+      <Link href="/exams" className="text-sm text-blue-600 hover:underline dark:text-blue-400">
+        ← Voltar às provas
+      </Link>
+    </div>
+  );
+}
+
+/** Strips the answer key before anything crosses to the client component. */
+async function InProgressQuiz({ examId }: { examId: string }): Promise<ReactNode> {
+  const questions = await repos.exams.listQuestions(examId);
+  const vm: QuizQuestionVM[] = questions.map((q) => ({
+    id: q.id,
+    position: q.position,
+    type: q.type,
+    prompt: q.prompt,
+    options: q.options,
+    userAnswer: q.userAnswer,
+    isCorrect: q.isCorrect,
+  }));
+  return <QuizRunner examId={examId} questions={vm} />;
+}
+
+/** The copy-paste exam cycle, untouched — old exams and comprehension still live here. */
+async function LegacyExam({ exam }: { exam: Exam }): Promise<ReactNode> {
+  const apiEnabled = (await getAiProvider()) !== null;
+
+  return (
+    <>
       {exam.status === "gerada" ? (
         <>
           <Step n={1} title="Cole este prompt na IA e responda na conversa">
@@ -127,10 +305,6 @@ export default async function ExamPage({
           </p>
         </section>
       ) : null}
-
-      <Link href="/exams" className="text-sm text-blue-600 hover:underline dark:text-blue-400">
-        ← Voltar às provas
-      </Link>
-    </div>
+    </>
   );
 }

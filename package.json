@@ -1,6 +1,6 @@
 {
   "name": "english-glossary",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "main": "dist-electron/main.cjs",
@@ -32,6 +32,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-hook-form": "^7.80.0",
+    "recharts": "^3.9.2",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "zod": "^3.23.8"

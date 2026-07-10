@@ -31,22 +31,23 @@ model Source {
 }
 
 model Word {
-  id           String         @id @default(cuid())
-  term         String // stored as entered
-  termKey      String         @unique // lowercased term — case-insensitive dedup, never lemmatised
-  kind         String         @default("palavra") // 'palavra' | 'expressao' (ADR-005) — discriminates words from fixed expressions
-  definitionEn String
-  definitionPt String
-  examples     String // JSON-encoded string[] of authorial sentences (SQLite has no Json/array type)
+  id            String         @id @default(cuid())
+  term          String // stored as entered
+  termKey       String         @unique // lowercased term — case-insensitive dedup, never lemmatised
+  kind          String         @default("palavra") // 'palavra' | 'expressao' (ADR-005) — discriminates words from fixed expressions
+  definitionEn  String
+  definitionPt  String
+  examples      String // JSON-encoded string[] of authorial sentences (SQLite has no Json/array type)
   // SRS fields (§6 / §6.1). State is derived, never stored.
-  easeFactor   Float          @default(2.5)
-  intervalDays Int            @default(0)
-  repetitions  Int            @default(0)
-  nextReview   DateTime
-  createdAt    DateTime       @default(now())
-  sightings    WordSighting[]
-  reviewLogs   ReviewLog[]
-  examWords    ExamWord[]
+  easeFactor    Float          @default(2.5)
+  intervalDays  Int            @default(0)
+  repetitions   Int            @default(0)
+  nextReview    DateTime
+  createdAt     DateTime       @default(now())
+  sightings     WordSighting[]
+  reviewLogs    ReviewLog[]
+  examWords     ExamWord[]
+  examQuestions ExamQuestion[]
 }
 
 model WordSighting {
@@ -79,18 +80,49 @@ model ReviewLog {
 }
 
 model Exam {
-  id               String     @id @default(cuid())
-  type             String // 'semanal' | 'vocabulario' | 'compreensao'
-  source           Source?    @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  id               String         @id @default(cuid())
+  type             String // 'semanal' | 'vocabulario' | 'compreensao' | 'pratica'
+  source           Source?        @relation(fields: [sourceId], references: [id], onDelete: SetNull)
   sourceId         String?
-  status           String // 'gerada' | 'respondida' | 'corrigida'
+  status           String // quiz: 'em_andamento' | 'finalizada' — legacy/comprehension: 'gerada' | 'respondida' | 'corrigida'
   promptText       String
   answersText      String? // the exam + answers, pasted back
   correctionPrompt String? // the generated correction prompt
   resultJson       String? // JSON-encoded validated ExamResult (SQLite has no Json type)
   score            Int?
-  createdAt        DateTime   @default(now())
+  finishedAt       DateTime? // when a quiz was closed (quiz flow only)
+  // Practice quizzes re-test the mistakes of a finished exam; the link survives
+  // deletion of the origin exam (SetNull) so the practice stays readable.
+  practiceOf       Exam?          @relation("PracticeOf", fields: [practiceOfId], references: [id], onDelete: SetNull)
+  practiceOfId     String?
+  practices        Exam[]         @relation("PracticeOf")
+  createdAt        DateTime       @default(now())
   examWords        ExamWord[]
+  questions        ExamQuestion[]
+}
+
+model ExamQuestion {
+  id              String    @id @default(cuid())
+  exam            Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
+  examId          String
+  word            Word      @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  wordId          String
+  position        Int
+  type            String // 'mc_en_pt' | 'mc_pt_en' | 'typed' | 'cloze' | 'ai_context'
+  prompt          String
+  options         String? // JSON-encoded string[] of choices (SQLite has no array type)
+  correctIndex    Int? // multiple choice only
+  correctAnswer   String? // typed/cloze only
+  contextSentence String? // the source sentence backing a cloze/ai question
+  explanation     String? // short PT explanation of the correct answer (AI-generated)
+  userAnswer      String?
+  isCorrect       Boolean?
+  answeredAt      DateTime?
+
+  // One question per word per exam keeps ExamWord's uniqueness invariant.
+  @@unique([examId, position])
+  @@unique([examId, wordId])
+  @@index([wordId])
 }
 
 model ExamWord {

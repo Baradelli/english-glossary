@@ -6,8 +6,6 @@ import { registerNewWord } from "./words.js";
 import {
   autoCorrectExam,
   generateSourceComprehensionExam,
-  generateVocabularyExam,
-  generateWeeklyReviewExam,
   srsQualityForAnswer,
   submitExamAnswers,
   submitExamCorrection,
@@ -29,46 +27,21 @@ async function makeWord(term: string, createdAt = NOW): Promise<string> {
   return w.id;
 }
 
+/** A legacy copy-paste exam (status "gerada"), as the manual flow creates it. */
+async function makeLegacyExam(): Promise<string> {
+  const exam = await repos.exams.create({
+    type: "vocabulario",
+    promptText: "prova legada (copiar/colar)",
+  });
+  return exam.id;
+}
+
 beforeEach(resetDb);
 
 describe("srsQualityForAnswer", () => {
   it("maps a correct answer to a passing grade and a wrong one to a failing grade", () => {
     expect(srsQualityForAnswer(true)).toBeGreaterThanOrEqual(3);
     expect(srsQualityForAnswer(false)).toBeLessThan(3);
-  });
-});
-
-describe("generateWeeklyReviewExam", () => {
-  it("creates a 'gerada' exam over words from the last 7 days only", async () => {
-    await makeWord("ramble", NOW); // recent
-    await makeWord("old", new Date("2026-06-01T00:00:00.000Z")); // >7 days ago
-
-    const exam = await generateWeeklyReviewExam(
-      { words: repos.words, exams: repos.exams },
-      NOW,
-    );
-    expect(exam.status).toBe("gerada");
-    expect(exam.type).toBe("semanal");
-    expect(exam.promptText).toContain("ramble");
-    expect(exam.promptText).not.toContain("old-en");
-  });
-
-  it("throws when there are no recent words", async () => {
-    await expect(
-      generateWeeklyReviewExam({ words: repos.words, exams: repos.exams }, NOW),
-    ).rejects.toThrow();
-  });
-});
-
-describe("generateVocabularyExam", () => {
-  it("throws when no words are selected", async () => {
-    await expect(
-      generateVocabularyExam(
-        { words: repos.words, exams: repos.exams },
-        [],
-        NOW,
-      ),
-    ).rejects.toThrow();
   });
 });
 
@@ -139,12 +112,9 @@ describe("generateSourceComprehensionExam", () => {
 describe("submitExamAnswers", () => {
   it("stores answers, builds a correction prompt, and moves to respondida", async () => {
     await makeWord("ramble");
-    const exam = await generateWeeklyReviewExam(
-      { words: repos.words, exams: repos.exams },
-      NOW,
-    );
+    const examId = await makeLegacyExam();
     const answers = "1. ramble = divagar";
-    const updated = await submitExamAnswers(repos.exams, exam.id, answers);
+    const updated = await submitExamAnswers(repos.exams, examId, answers);
     expect(updated.status).toBe("respondida");
     expect(updated.correctionPrompt).toContain(answers);
   });
@@ -160,12 +130,8 @@ describe("submitExamCorrection (the high-risk cycle §6.2)", () => {
   async function setup() {
     const rambleId = await makeWord("ramble");
     const ramblingId = await makeWord("rambling");
-    const exam = await generateVocabularyExam(
-      { words: repos.words, exams: repos.exams },
-      [rambleId, ramblingId],
-      NOW,
-    );
-    return { rambleId, ramblingId, examId: exam.id };
+    const examId = await makeLegacyExam();
+    return { rambleId, ramblingId, examId };
   }
 
   function resultJson(extraGhost = false): string {
@@ -243,12 +209,8 @@ describe("autoCorrectExam (ADR-001 ApiAdapter path)", () => {
 
   async function aGeneratedExam(): Promise<{ rambleId: string; examId: string }> {
     const rambleId = await makeWord("ramble");
-    const exam = await generateVocabularyExam(
-      { words: repos.words, exams: repos.exams },
-      [rambleId],
-      NOW,
-    );
-    return { rambleId, examId: exam.id };
+    const examId = await makeLegacyExam();
+    return { rambleId, examId };
   }
 
   it("runs the full cycle: answers -> correction prompt -> AI -> validated SRS update", async () => {

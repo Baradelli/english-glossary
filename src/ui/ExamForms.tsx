@@ -8,8 +8,8 @@ import { z } from "zod";
 import {
   autoCorrectAction,
   generateComprehensionExamAction,
-  generateVocabularyExamAction,
-  generateWeeklyExamAction,
+  startVocabularyQuizAction,
+  startWeeklyQuizAction,
   submitAnswersAction,
   submitCorrectionAction,
   type FormState,
@@ -20,7 +20,11 @@ import { notify } from "./lib/form.js";
 const buttonClass =
   "inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60";
 
-export function GenerateExamButtons(): ReactNode {
+export function GenerateExamButtons({
+  disabled = false,
+}: {
+  disabled?: boolean;
+}): ReactNode {
   const router = useRouter();
   const [pending, setPending] = useState<null | "weekly" | "vocab">(null);
 
@@ -35,23 +39,30 @@ export function GenerateExamButtons(): ReactNode {
   }
 
   return (
-    <div className="flex flex-wrap gap-3">
-      <button
-        type="button"
-        disabled={pending !== null}
-        onClick={() => run("weekly", generateWeeklyExamAction)}
-        className={buttonClass}
-      >
-        {pending === "weekly" ? "Gerando…" : "Revisão semanal"}
-      </button>
-      <button
-        type="button"
-        disabled={pending !== null}
-        onClick={() => run("vocab", generateVocabularyExamAction)}
-        className={buttonClass}
-      >
-        {pending === "vocab" ? "Gerando…" : "Prova de vocabulário (glossário)"}
-      </button>
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          disabled={disabled || pending !== null}
+          onClick={() => run("weekly", startWeeklyQuizAction)}
+          className={buttonClass}
+        >
+          {pending === "weekly" ? "Gerando prova…" : "Revisão semanal"}
+        </button>
+        <button
+          type="button"
+          disabled={disabled || pending !== null}
+          onClick={() => run("vocab", startVocabularyQuizAction)}
+          className={buttonClass}
+        >
+          {pending === "vocab" ? "Gerando prova…" : "Prova de vocabulário"}
+        </button>
+      </div>
+      {pending !== null ? (
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          A IA está montando as questões — isso pode levar alguns segundos.
+        </p>
+      ) : null}
     </div>
   );
 }
